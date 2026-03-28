@@ -1,0 +1,13 @@
+# Dependencias
+node_modules/
+npm-debug.log*
+
+# Configuración y Secretos (¡MUY IMPORTANTE!)
+.env
+config/config.json
+
+# Base de datos y temporales
+*.sql
+.DS_Store
+dist/
+build/
