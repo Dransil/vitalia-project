@@ -1,4 +1,5 @@
 const { Usuario, Especialidad, Consultorio } = require('../models/associations');
+const bcrypt = require('bcryptjs');
 
 // Obtener todos los usuarios
 exports.obtenerUsuarios = async (req, res) => {
@@ -31,5 +32,24 @@ exports.obtenerUsuarios = async (req, res) => {
             msg: 'Error al obtener usuarios',
             error: error.message
         });
+    }
+};
+// Crear usuario
+exports.crearUsuario = async (req, res) => {
+    try {
+        const { contraseña_hash, ...datos } = req.body;
+
+        // Encriptar contraseña
+        const salt = bcrypt.genSaltSync(10);
+        const passwordEncriptada = bcrypt.hashSync(contraseña_hash, salt);
+
+        const nuevoUsuario = await Usuario.create({
+            ...datos,
+            contraseña_hash: passwordEncriptada
+        });
+
+        res.status(201).json({ ok: true, msg: 'Usuario creado', data: nuevoUsuario });
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al crear', error: error.message });
     }
 };
