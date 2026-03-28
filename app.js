@@ -17,7 +17,7 @@ app.get('/test', (req, res) => {
     res.send('Servidor corriendo');
 });
 // Rutas
-app.use('/api/usuarios', usuarioRoutes);
+app.use('/vitalia/usuarios', usuarioRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

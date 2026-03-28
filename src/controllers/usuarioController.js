@@ -1,5 +1,6 @@
 const { Usuario, Especialidad, Consultorio } = require('../models/associations');
 
+// Obtener todos los usuarios
 exports.obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll({
