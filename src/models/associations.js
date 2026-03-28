@@ -25,7 +25,7 @@ Historial.belongsTo(Cita, { foreignKey: 'id_cita' });
 Cita.hasOne(Cotizacion, { foreignKey: 'id_cita' });
 Cotizacion.belongsTo(Cita, { foreignKey: 'id_cita' });
 
-// 4. Relaciones de Historial (Especialmente para Dentistas)
+// 4. Relaciones de Historial
 Historial.hasMany(HistorialDental, { foreignKey: 'id_historial' });
 HistorialDental.belongsTo(Historial, { foreignKey: 'id_historial' });
 
