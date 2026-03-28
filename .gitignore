@@ -2,7 +2,7 @@
 node_modules/
 npm-debug.log*
 
-# Configuración y Secretos (¡MUY IMPORTANTE!)
+# Configuración y secretos
 .env
 config/config.json
 
