@@ -70,3 +70,21 @@ exports.actualizarUsuario = async (req, res) => {
         res.status(500).json({ ok: false, error: error.message });
     }
 };
+
+// Activar/desactivar usuario
+exports.cambiarEstadoUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = await Usuario.findByPk(id);
+        if (!usuario) return res.status(404).json({ msg: 'No existe' });
+        const nuevoEstado = (usuario.estado === 'activo') ? 'inactivo' : 'activo';
+        await usuario.update({ estado: nuevoEstado });
+        res.json({
+            ok: true,
+            msg: `Usuario ahora está ${nuevoEstado}`,
+            estado: nuevoEstado
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

@@ -7,6 +7,7 @@ const app = express();
 
 // Importacion de routes
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -18,6 +19,7 @@ app.get('/test', (req, res) => {
 });
 // Rutas
 app.use('/vitalia/usuarios', usuarioRoutes);
+app.use('/vitalia/auth', authRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
