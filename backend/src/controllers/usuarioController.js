@@ -34,6 +34,7 @@ exports.obtenerUsuarios = async (req, res) => {
         });
     }
 };
+
 // Crear usuario
 exports.crearUsuario = async (req, res) => {
     try {
@@ -51,5 +52,39 @@ exports.crearUsuario = async (req, res) => {
         res.status(201).json({ ok: true, msg: 'Usuario creado', data: nuevoUsuario });
     } catch (error) {
         res.status(500).json({ ok: false, msg: 'Error al crear', error: error.message });
+    }
+};
+
+// Actualizar usuario
+exports.actualizarUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [actualizado] = await Usuario.update(req.body, { where: { id_usuario: id } });
+
+        if (actualizado) {
+            const usuarioEditado = await Usuario.findByPk(id);
+            return res.json({ ok: true, msg: 'Usuario actualizado', data: usuarioEditado });
+        }
+        res.status(404).json({ ok: false, msg: 'Usuario no encontrado' });
+    } catch (error) {
+        res.status(500).json({ ok: false, error: error.message });
+    }
+};
+
+// Activar/desactivar usuario
+exports.cambiarEstadoUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = await Usuario.findByPk(id);
+        if (!usuario) return res.status(404).json({ msg: 'No existe' });
+        const nuevoEstado = (usuario.estado === 'activo') ? 'inactivo' : 'activo';
+        await usuario.update({ estado: nuevoEstado });
+        res.json({
+            ok: true,
+            msg: `Usuario ahora está ${nuevoEstado}`,
+            estado: nuevoEstado
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };

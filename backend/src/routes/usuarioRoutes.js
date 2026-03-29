@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const usuarioController = require('../controllers/usuarioController');
 
-// Ruta: GET /vitualia/usuarios
+// Ruta: /vitalia/usuarios
 router.get('/', usuarioController.obtenerUsuarios);
 router.post('/', usuarioController.crearUsuario);
-    
+router.put('/:id', usuarioController.actualizarUsuario);
+router.patch('/estado/:id', usuarioController.cambiarEstadoUsuario);
+
 module.exports = router;
