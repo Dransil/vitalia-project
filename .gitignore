@@ -1,9 +1,9 @@
 # Dependencias
-node_modules/
+/backend/node_modules/
 npm-debug.log*
 
 # Configuración y secretos
-.env
+/backend/.env
 config/config.json
 
 # Base de datos y temporales
