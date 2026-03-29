@@ -9,5 +9,5 @@ config/config.json
 # Base de datos y temporales
 *.sql
 .DS_Store
-dist/
-build/
+/backend/dist/
+/backend/build/
