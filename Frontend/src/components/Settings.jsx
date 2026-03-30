@@ -107,7 +107,7 @@ const Settings = () => {
           Configuración
         </h1>
         <p style={{ color: colors.neutral[600] }}>
-          Personaliza tu experiencia en MediCitas
+          Personaliza tu experiencia en Vitalia
         </p>
       </div>
 

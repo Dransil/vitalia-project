@@ -192,7 +192,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
             margin: 0,
           }}
         >
-          © 2024 MediCitas. Todos los derechos reservados.
+          © 2024 Vitalia. Todos los derechos reservados.
         </p>
       </div>
     </aside>
