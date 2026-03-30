@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useTheme } from '../Config/ThemeContext';
-import { resetConfig } from '../Config/configStorage.js';
+import { resetConfig, defaultConfig } from '../Config/ConfigStorage.js';
 import { MdColorLens, MdRefresh, MdSave, MdNotifications, MdLanguage, MdInfo } from 'react-icons/md';
 
 const Settings = () => {
   const { config, updateThemeConfig, spacing, colors, typography, shadows, borderRadius } = useTheme();
   const [localConfig, setLocalConfig] = useState(config);
   const [saved, setSaved] = useState(false);
+  const [customizeEnabled, setCustomizeEnabled] = useState(true);
 
   const handleColorChange = (category, value) => {
+    if (!customizeEnabled) return;
     setLocalConfig(prev => ({
       ...prev,
       theme: {
@@ -22,6 +24,7 @@ const Settings = () => {
   };
 
   const handleBackgroundChange = (value) => {
+    if (!customizeEnabled) return;
     setLocalConfig(prev => ({
       ...prev,
       theme: {
@@ -29,6 +32,21 @@ const Settings = () => {
         background: value,
       },
     }));
+  };
+
+  const handleToggleCustomize = () => {
+    setCustomizeEnabled(!customizeEnabled);
+    if (customizeEnabled) {
+      // Si se desactiva, cargar los colores predeterminados
+      setLocalConfig({
+        ...localConfig,
+        theme: {
+          ...localConfig.theme,
+          colors: defaultConfig.theme.colors,
+          background: defaultConfig.theme.background,
+        },
+      });
+    }
   };
 
   const handleNotificationChange = (key, value) => {
@@ -63,13 +81,16 @@ const Settings = () => {
 
   const handleReset = () => {
     if (window.confirm('¿Restaurar configuración por defecto?')) {
-      const defaultConfig = resetConfig();
-      setLocalConfig(defaultConfig);
-      updateThemeConfig(defaultConfig);
+      const newDefaultConfig = resetConfig();
+      setLocalConfig(newDefaultConfig);
+      updateThemeConfig(newDefaultConfig);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
   };
+
+  const displayColors = customizeEnabled ? localConfig.theme.colors : defaultConfig.theme.colors;
+  const displayBackground = customizeEnabled ? localConfig.theme.background : defaultConfig.theme.background;
 
   return (
     <div style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
@@ -86,7 +107,7 @@ const Settings = () => {
           Configuración
         </h1>
         <p style={{ color: colors.neutral[600] }}>
-          Personaliza tu experiencia en Vitalia
+          Personaliza tu experiencia en MediCitas
         </p>
       </div>
 
@@ -118,148 +139,200 @@ const Settings = () => {
             boxShadow: shadows.md,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
-            <MdColorLens size={24} color={colors.primary[600]} />
-            <h2
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+              <MdColorLens size={24} color={colors.primary[600]} />
+              <h2
+                style={{
+                  fontSize: typography.fontSize.lg.size,
+                  fontWeight: typography.fontWeight.bold,
+                  color: colors.neutral[900],
+                  margin: 0,
+                }}
+              >
+                Tema de Color
+              </h2>
+            </div>
+
+            {/* Switch */}
+            <div
+              onClick={handleToggleCustomize}
               style={{
-                fontSize: typography.fontSize.lg.size,
-                fontWeight: typography.fontWeight.bold,
-                color: colors.neutral[900],
-                margin: 0,
+                position: 'relative',
+                width: '50px',
+                height: '28px',
+                background: customizeEnabled ? colors.primary[600] : colors.neutral[300],
+                borderRadius: '14px',
+                cursor: 'pointer',
+                transition: 'background 0.3s',
               }}
             >
-              Tema de Color
-            </h2>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: customizeEnabled ? '26px' : '2px',
+                  width: '24px',
+                  height: '24px',
+                  background: colors.neutral[0],
+                  borderRadius: '50%',
+                  transition: 'left 0.3s',
+                  boxShadow: shadows.sm,
+                }}
+              />
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-            {/* Color Primario */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[900],
-                  marginBottom: spacing.sm,
-                }}
-              >
-                Color Primario
-              </label>
-              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={localConfig.theme.colors.primary}
-                  onChange={e => handleColorChange('primary', e.target.value)}
+          <div
+            style={{
+              opacity: customizeEnabled ? 1 : 0.5,
+              pointerEvents: customizeEnabled ? 'auto' : 'none',
+              transition: 'opacity 0.3s',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+              {/* Color Primario */}
+              <div>
+                <label
                   style={{
-                    width: '60px',
-                    height: '40px',
-                    border: `2px solid ${colors.neutral[300]}`,
-                    borderRadius: borderRadius.md,
-                    cursor: 'pointer',
+                    display: 'block',
+                    fontSize: typography.fontSize.sm.size,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.neutral[900],
+                    marginBottom: spacing.sm,
                   }}
-                />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
-                  {localConfig.theme.colors.primary}
-                </span>
+                >
+                  Color Primario
+                </label>
+                <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={displayColors.primary}
+                    onChange={e => handleColorChange('primary', e.target.value)}
+                    style={{
+                      width: '60px',
+                      height: '40px',
+                      border: `2px solid ${colors.neutral[300]}`,
+                      borderRadius: borderRadius.md,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
+                    {displayColors.primary}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Color Secundario */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[900],
-                  marginBottom: spacing.sm,
-                }}
-              >
-                Color Secundario
-              </label>
-              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={localConfig.theme.colors.secondary}
-                  onChange={e => handleColorChange('secondary', e.target.value)}
+              {/* Color Secundario */}
+              <div>
+                <label
                   style={{
-                    width: '60px',
-                    height: '40px',
-                    border: `2px solid ${colors.neutral[300]}`,
-                    borderRadius: borderRadius.md,
-                    cursor: 'pointer',
+                    display: 'block',
+                    fontSize: typography.fontSize.sm.size,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.neutral[900],
+                    marginBottom: spacing.sm,
                   }}
-                />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
-                  {localConfig.theme.colors.secondary}
-                </span>
+                >
+                  Color Secundario
+                </label>
+                <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={displayColors.secondary}
+                    onChange={e => handleColorChange('secondary', e.target.value)}
+                    style={{
+                      width: '60px',
+                      height: '40px',
+                      border: `2px solid ${colors.neutral[300]}`,
+                      borderRadius: borderRadius.md,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
+                    {displayColors.secondary}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Color Acento */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[900],
-                  marginBottom: spacing.sm,
-                }}
-              >
-                Color de Acento
-              </label>
-              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={localConfig.theme.colors.accent}
-                  onChange={e => handleColorChange('accent', e.target.value)}
+              {/* Color Acento */}
+              <div>
+                <label
                   style={{
-                    width: '60px',
-                    height: '40px',
-                    border: `2px solid ${colors.neutral[300]}`,
-                    borderRadius: borderRadius.md,
-                    cursor: 'pointer',
+                    display: 'block',
+                    fontSize: typography.fontSize.sm.size,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.neutral[900],
+                    marginBottom: spacing.sm,
                   }}
-                />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
-                  {localConfig.theme.colors.accent}
-                </span>
+                >
+                  Color de Acento
+                </label>
+                <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={displayColors.accent}
+                    onChange={e => handleColorChange('accent', e.target.value)}
+                    style={{
+                      width: '60px',
+                      height: '40px',
+                      border: `2px solid ${colors.neutral[300]}`,
+                      borderRadius: borderRadius.md,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
+                    {displayColors.accent}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Color de Fondo */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[900],
-                  marginBottom: spacing.sm,
-                }}
-              >
-                Color de Fondo
-              </label>
-              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={localConfig.theme.background || '#f0f9ff'}
-                  onChange={e => handleBackgroundChange(e.target.value)}
+              {/* Color de Fondo */}
+              <div>
+                <label
                   style={{
-                    width: '60px',
-                    height: '40px',
-                    border: `2px solid ${colors.neutral[300]}`,
-                    borderRadius: borderRadius.md,
-                    cursor: 'pointer',
+                    display: 'block',
+                    fontSize: typography.fontSize.sm.size,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.neutral[900],
+                    marginBottom: spacing.sm,
                   }}
-                />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
-                  {localConfig.theme.background || '#f0f9ff'}
-                </span>
+                >
+                  Color de Fondo
+                </label>
+                <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={displayBackground || '#f0f9ff'}
+                    onChange={e => handleBackgroundChange(e.target.value)}
+                    style={{
+                      width: '60px',
+                      height: '40px',
+                      border: `2px solid ${colors.neutral[300]}`,
+                      borderRadius: borderRadius.md,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
+                    {displayBackground || '#f0f9ff'}
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Info del estado */}
+          <div
+            style={{
+              marginTop: spacing.lg,
+              padding: spacing.md,
+              background: colors.neutral[50],
+              borderRadius: borderRadius.lg,
+              fontSize: typography.fontSize.xs.size,
+              color: colors.neutral[600],
+            }}
+          >
+            {customizeEnabled ? 'Usando colores personalizados' : 'Usando colores predeterminados'}
           </div>
         </div>
 

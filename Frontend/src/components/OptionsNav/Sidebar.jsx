@@ -1,16 +1,25 @@
 import React from 'react';
 import { useTheme } from '../../Config/ThemeContext';
 import { MdDashboard, MdAddCircle, MdCalendarToday, MdSettings, MdMedicalServices } from 'react-icons/md';
+import MainDashboard from '../Main/MainDashboard';
+import { useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ activeView, setActiveView, userRole }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   
   const menuItems = [
-    { id: 'dashboard', label: 'Panel Principal', icon: MdDashboard },
+    { id: 'dashboard', label: 'Panel Principal', icon: MdDashboard, path : '/Main' },
     { id: 'new-appointment', label: 'Nueva Cita', icon: MdAddCircle },
     { id: 'appointments', label: 'Mis Citas', icon: MdCalendarToday },
+    { id: 'DashboardDctr', label: 'Dashboard', icon: MdDashboard, path: '/Doctor_Dashboard' },
     { id: 'settings', label: 'Configuración', icon: MdSettings },
   ];
+
+    const handleNavigation = (path) => {
+    navigate(path);
+    setActiveView(path);
+  };
 
   const getRoleLabel = (role) => {
     const labels = {
@@ -138,7 +147,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => setActiveView(item.id)}
+                  onClick={() => handleNavigation(item.path)}
                   style={{
                     width: '100%',
                     textAlign: 'left',
