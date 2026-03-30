@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../Config/ThemeContext';
-import { resetConfig } from '../Config/ConfigStorage.js';
+import { resetConfig } from '../Config/configStorage.js';
+import { MdColorLens, MdRefresh, MdSave, MdNotifications, MdLanguage, MdInfo } from 'react-icons/md';
 
 const Settings = () => {
   const { config, updateThemeConfig, spacing, colors, typography, shadows, borderRadius } = useTheme();
@@ -16,6 +17,16 @@ const Settings = () => {
           ...prev.theme.colors,
           [category]: value,
         },
+      },
+    }));
+  };
+
+  const handleBackgroundChange = (value) => {
+    setLocalConfig(prev => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        background: value,
       },
     }));
   };
@@ -72,10 +83,10 @@ const Settings = () => {
             marginBottom: spacing.md,
           }}
         >
-          ⚙️ Configuración
+          Configuración
         </h1>
         <p style={{ color: colors.neutral[600] }}>
-          Personaliza tu experiencia en MediCitas
+          Personaliza tu experiencia en Vitalia
         </p>
       </div>
 
@@ -92,7 +103,7 @@ const Settings = () => {
             fontWeight: typography.fontWeight.semibold,
           }}
         >
-          ✓ Configuración guardada correctamente
+          Configuración guardada correctamente
         </div>
       )}
 
@@ -107,16 +118,19 @@ const Settings = () => {
             boxShadow: shadows.md,
           }}
         >
-          <h2
-            style={{
-              fontSize: typography.fontSize.lg.size,
-              fontWeight: typography.fontWeight.bold,
-              color: colors.neutral[900],
-              marginBottom: spacing.md,
-            }}
-          >
-            🎨 Tema de Color
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+            <MdColorLens size={24} color={colors.primary[600]} />
+            <h2
+              style={{
+                fontSize: typography.fontSize.lg.size,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.neutral[900],
+                margin: 0,
+              }}
+            >
+              Tema de Color
+            </h2>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
             {/* Color Primario */}
@@ -145,7 +159,7 @@ const Settings = () => {
                     cursor: 'pointer',
                   }}
                 />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600] }}>
+                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
                   {localConfig.theme.colors.primary}
                 </span>
               </div>
@@ -177,7 +191,7 @@ const Settings = () => {
                     cursor: 'pointer',
                   }}
                 />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600] }}>
+                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
                   {localConfig.theme.colors.secondary}
                 </span>
               </div>
@@ -209,8 +223,40 @@ const Settings = () => {
                     cursor: 'pointer',
                   }}
                 />
-                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600] }}>
+                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
                   {localConfig.theme.colors.accent}
+                </span>
+              </div>
+            </div>
+
+            {/* Color de Fondo */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: typography.fontSize.sm.size,
+                  fontWeight: typography.fontWeight.semibold,
+                  color: colors.neutral[900],
+                  marginBottom: spacing.sm,
+                }}
+              >
+                Color de Fondo
+              </label>
+              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={localConfig.theme.background || '#f0f9ff'}
+                  onChange={e => handleBackgroundChange(e.target.value)}
+                  style={{
+                    width: '60px',
+                    height: '40px',
+                    border: `2px solid ${colors.neutral[300]}`,
+                    borderRadius: borderRadius.md,
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ fontSize: typography.fontSize.sm.size, color: colors.neutral[600], fontFamily: 'monospace' }}>
+                  {localConfig.theme.background || '#f0f9ff'}
                 </span>
               </div>
             </div>
@@ -227,16 +273,19 @@ const Settings = () => {
             boxShadow: shadows.md,
           }}
         >
-          <h2
-            style={{
-              fontSize: typography.fontSize.lg.size,
-              fontWeight: typography.fontWeight.bold,
-              color: colors.neutral[900],
-              marginBottom: spacing.md,
-            }}
-          >
-            🔔 Notificaciones
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+            <MdNotifications size={24} color={colors.primary[600]} />
+            <h2
+              style={{
+                fontSize: typography.fontSize.lg.size,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.neutral[900],
+                margin: 0,
+              }}
+            >
+              Notificaciones
+            </h2>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
             {/* Habilitar notificaciones */}
@@ -320,16 +369,19 @@ const Settings = () => {
             boxShadow: shadows.md,
           }}
         >
-          <h2
-            style={{
-              fontSize: typography.fontSize.lg.size,
-              fontWeight: typography.fontWeight.bold,
-              color: colors.neutral[900],
-              marginBottom: spacing.md,
-            }}
-          >
-            🌐 Idioma y Región
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+            <MdLanguage size={24} color={colors.primary[600]} />
+            <h2
+              style={{
+                fontSize: typography.fontSize.lg.size,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.neutral[900],
+                margin: 0,
+              }}
+            >
+              Idioma y Región
+            </h2>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
             {/* Idioma */}
@@ -442,41 +494,44 @@ const Settings = () => {
             boxShadow: shadows.md,
           }}
         >
-          <h2
-            style={{
-              fontSize: typography.fontSize.lg.size,
-              fontWeight: typography.fontWeight.bold,
-              color: colors.neutral[900],
-              marginBottom: spacing.md,
-            }}
-          >
-            ℹ️ Información
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+            <MdInfo size={24} color={colors.primary[600]} />
+            <h2
+              style={{
+                fontSize: typography.fontSize.lg.size,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.neutral[900],
+                margin: 0,
+              }}
+            >
+              Información
+            </h2>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
             <div>
-              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs }}>
+              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs, margin: 0, marginBottom: spacing.xs }}>
                 Versión de la Aplicación
               </p>
-              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900] }}>
+              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900], margin: 0 }}>
                 v1.0.0
               </p>
             </div>
 
             <div>
-              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs }}>
+              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs, margin: 0, marginBottom: spacing.xs }}>
                 Última sincronización
               </p>
-              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900] }}>
+              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900], margin: 0 }}>
                 {new Date().toLocaleString('es-ES')}
               </p>
             </div>
 
             <div>
-              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs }}>
+              <p style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[500], marginBottom: spacing.xs, margin: 0, marginBottom: spacing.xs }}>
                 Almacenamiento local
               </p>
-              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900] }}>
+              <p style={{ fontWeight: typography.fontWeight.semibold, color: colors.neutral[900], margin: 0 }}>
                 {(JSON.stringify(config).length / 1024).toFixed(2)} KB
               </p>
             </div>
@@ -504,11 +559,15 @@ const Settings = () => {
             fontWeight: typography.fontWeight.semibold,
             cursor: 'pointer',
             transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
           }}
           onMouseEnter={e => e.target.style.backgroundColor = colors.warning.dark}
           onMouseLeave={e => e.target.style.backgroundColor = colors.warning.main}
         >
-          🔄 Restaurar Predeterminados
+          <MdRefresh size={18} />
+          Restaurar Predeterminados
         </button>
 
         <button
@@ -522,11 +581,15 @@ const Settings = () => {
             fontWeight: typography.fontWeight.semibold,
             cursor: 'pointer',
             transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
           }}
           onMouseEnter={e => e.target.style.boxShadow = shadows.lg}
           onMouseLeave={e => e.target.style.boxShadow = shadows.base}
         >
-          💾 Guardar Cambios
+          <MdSave size={18} />
+          Guardar Cambios
         </button>
       </div>
     </div>

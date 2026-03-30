@@ -1,14 +1,15 @@
 import React from 'react';
 import { useTheme } from '../../Config/ThemeContext';
+import { MdDashboard, MdAddCircle, MdCalendarToday, MdSettings, MdMedicalServices } from 'react-icons/md';
 
 const Sidebar = ({ activeView, setActiveView, userRole }) => {
   const theme = useTheme();
   
   const menuItems = [
-    { id: 'dashboard', label: 'Panel Principal', icon: '📊' },
-    { id: 'new-appointment', label: 'Nueva Cita', icon: '➕' },
-    { id: 'appointments', label: 'Mis Citas', icon: '📅' },
-    { id: 'settings', label: 'Configuración', icon: '⚙️' },
+    { id: 'dashboard', label: 'Panel Principal', icon: MdDashboard },
+    { id: 'new-appointment', label: 'Nueva Cita', icon: MdAddCircle },
+    { id: 'appointments', label: 'Mis Citas', icon: MdCalendarToday },
+    { id: 'settings', label: 'Configuración', icon: MdSettings },
   ];
 
   const getRoleLabel = (role) => {
@@ -55,7 +56,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
               boxShadow: theme.shadows.medical,
             }}
           >
-            ⚕️
+            <MdMedicalServices size={24} />
           </div>
           <div>
             <h1
@@ -66,7 +67,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
                 margin: 0,
               }}
             >
-              MediCitas
+              Vitalia
             </h1>
             <p
               style={{
@@ -99,7 +100,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
             margin: 0,
           }}
         >
-          Profesional
+          Bienvenido
         </p>
         <p
           style={{
@@ -132,34 +133,37 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
       {/* Menu de navegación */}
       <nav style={{ flex: 1, padding: theme.spacing.md }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-          {menuItems.map((item) => (
-            <li key={item.id}>
-              <button
-                onClick={() => setActiveView(item.id)}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: `${theme.spacing.md} ${theme.spacing.md}`,
-                  borderRadius: theme.borderRadius.lg,
-                  fontWeight: theme.typography.fontWeight.semibold,
-                  transition: theme.transitions.base,
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: theme.spacing.md,
-                  background: activeView === item.id
-                    ? `linear-gradient(to right, ${theme.colors.primary[600]}, ${theme.colors.primary[500]})`
-                    : 'transparent',
-                  color: activeView === item.id ? theme.colors.neutral[0] : theme.colors.neutral[600],
-                  boxShadow: activeView === item.id ? theme.shadows.medical : 'none',
-                }}
-              >
-                <span style={{ fontSize: '20px' }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            </li>
-          ))}
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <li key={item.id}>
+                <button
+                  onClick={() => setActiveView(item.id)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: `${theme.spacing.md} ${theme.spacing.md}`,
+                    borderRadius: theme.borderRadius.lg,
+                    fontWeight: theme.typography.fontWeight.semibold,
+                    transition: theme.transitions.base,
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.spacing.md,
+                    background: activeView === item.id
+                      ? `linear-gradient(to right, ${theme.colors.primary[600]}, ${theme.colors.primary[500]})`
+                      : 'transparent',
+                    color: activeView === item.id ? theme.colors.neutral[0] : theme.colors.neutral[600],
+                    boxShadow: activeView === item.id ? theme.shadows.medical : 'none',
+                  }}
+                >
+                  <IconComponent size={20} />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
