@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
 import { MdSearch, MdClose, MdAdd, MdErrorOutline } from 'react-icons/md';
+import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Doctor_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
@@ -9,7 +11,7 @@ const Doctor_Dashboard = () => {
   const [searchPhone, setSearchPhone] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(true);
-
+  const Navigate = useNavigate();
   const handleClearFilters = () => {
     setSearchName('');
     setSearchEmail('');
@@ -17,6 +19,7 @@ const Doctor_Dashboard = () => {
   };
 
   const handleCreateUser = () => {
+    Navigate('/Doctor_Register');
     console.log('Crear nuevo usuario');
   };
 

@@ -7,6 +7,7 @@ import Login from './components/Auth/Login.jsx';
 import MainDashboard from './components/Main/MainDashboard.jsx';
 import RegisterLg from './components/Auth/Registerlg.jsx';
 import Doctor_Dashboard from './components/Users/Doctor/DashboardDctr.jsx';
+import RegisterDct from './components/Users/Doctor/RegisterDctr.jsx';
 
 // 👈 Layout con Sidebar para rutas protegidas
 const ProtectedLayout = () => {
@@ -43,6 +44,7 @@ function App() {
             <Route path="/" element={<Settings />} />
             <Route path="/Main" element={<MainDashboard />} />
             <Route path="/Doctor_Dashboard" element={<Doctor_Dashboard />} />
+            <Route path="/Doctor_Register" element={<RegisterDct />} />
             {/* Aquí agregas más rutas protegidas cuando las necesites */}
           </Route>
         </Routes>
