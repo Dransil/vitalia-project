@@ -2,21 +2,40 @@ import React, { useState } from 'react';
 import { useTheme } from '../../Config/ThemeContext';
 import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import VitaliaIcon from '../../assets/Vitalia_Icon.png';
+import { login } from '../../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { config, colors, spacing, typography, borderRadius } = useTheme();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => {
+
+    if (!email || !password) {
+      setError('Por favor completa todos los campos');
       setLoading(false);
-      console.log('Login attempt:', { email, password });
-    }, 1500);
+      return;
+    }
+
+    const result = await login(email, password);
+    
+    if (result.ok) {
+      // Login exitoso - redirigir al dashboard
+      navigate('/');
+    } else {
+      // Mostrar error
+      setError(result.msg || 'Error en el login');
+    }
+
+    setLoading(false);
   };
 
   const backgroundColor = config.theme.background || colors.primary[50];
@@ -65,6 +84,24 @@ const Login = () => {
               Inicia sesión para continuar
             </p>
           </div>
+
+          {/* Mensaje de Error */}
+          {error && (
+            <div
+              style={{
+                padding: spacing.md,
+                marginBottom: spacing.lg,
+                backgroundColor: colors.error.light,
+                border: `2px solid ${colors.error.main}`,
+                color: colors.error.dark,
+                borderRadius: borderRadius.lg,
+                fontWeight: typography.fontWeight.semibold,
+                fontSize: typography.fontSize.sm.size,
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           {/* Formulario */}
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
@@ -248,7 +285,7 @@ const Login = () => {
           >
             ¿No tienes cuenta?{' '}
             <a
-              href="/Register_Signup"
+              href="#"
               style={{
                 color: config.theme.colors.primary,
                 textDecoration: 'none',
@@ -299,24 +336,24 @@ const Login = () => {
         />
 
         {/* Logo Grande */}
-       <div
-        style={{
+        <div
+          style={{
             position: 'relative',
             zIndex: 10,
-            width: '750px',
-            height: '750px',
+            width: '250px',
+            height: '250px',
             filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))',
-        }}
+          }}
         >
-        <img
+          <img
             src={VitaliaIcon}
             alt="Vitalia"
             style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
             }}
-        />
+          />
         </div>
       </div>
     </div>
