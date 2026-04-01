@@ -25,3 +25,21 @@ exports.crearPaciente = async (req, res) => {
         res.status(500).json({ ok: false, error: error.message });
     }
 };
+
+// Activar/desactivar paciente
+exports.cambiarEstadoPaciente = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const paciente = await Paciente.findByPk(id);
+        if (!paciente) return res.status(404).json({ ok: false, msg: 'Paciente no encontrado' });
+        const nuevoEstado = (paciente.estado === 'activo') ? 'inactivo' : 'activo';
+        await paciente.update({ estado: nuevoEstado });
+        res.json({
+            ok: true,
+            msg: `El estado del paciente ${paciente.nombre} ahora es: ${nuevoEstado}`,
+            estado: nuevoEstado
+        });
+    } catch (error) {
+        res.status(500).json({ ok: false, error: error.message });
+    }
+};
