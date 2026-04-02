@@ -41,8 +41,8 @@ function App() {
 
           {/* Todas las rutas protegidas heredan el Layout con Sidebar */}
           <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<Settings />} />
-            <Route path="/Main" element={<MainDashboard />} />
+            <Route path="/Settings" element={<Settings />} />
+            <Route path="/" element={<MainDashboard />} />
             <Route path="/Doctor_Dashboard" element={<Doctor_Dashboard />} />
             <Route path="/Doctor_Register" element={<RegisterDct />} />
             {/* Aquí agregas más rutas protegidas cuando las necesites */}

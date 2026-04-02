@@ -13,7 +13,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
     { id: 'new-appointment', label: 'Nueva Cita', icon: MdAddCircle },
     { id: 'appointments', label: 'Mis Citas', icon: MdCalendarToday },
     { id: 'DashboardDctr', label: 'Dashboard', icon: MdDashboard, path: '/Doctor_Dashboard' },
-    { id: 'settings', label: 'Configuración', icon: MdSettings },
+    { id: 'settings', label: 'Configuración', icon: MdSettings, path: '/Settings' },
   ];
 
     const handleNavigation = (path) => {

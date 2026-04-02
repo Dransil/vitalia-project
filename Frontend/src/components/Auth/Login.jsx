@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useTheme } from '../../Config/ThemeContext';
 import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import VitaliaIcon from '../../assets/Vitalia_Icon.png';
-import { login } from '../../services/authService';
+import authService from '../../Services/AuthService';
 import { useNavigate } from 'react-router-dom';
+
+const { login } = authService;
 
 const Login = () => {
   const { config, colors, spacing, typography, borderRadius } = useTheme();
