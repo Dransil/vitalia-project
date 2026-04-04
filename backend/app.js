@@ -8,6 +8,7 @@ const app = express();
 // Importacion de routes
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
 const PacienteRoutes = require('./src/routes/pacienteRoutes');
+const tipocitaRoutes = require('./src/routes/tipocitaRoutes');
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -23,6 +24,7 @@ app.get('/test', (req, res) => {
 // Rutas
 app.use('/vitalia/usuarios', usuarioRoutes);
 app.use('/vitalia/pacientes', PacienteRoutes);
+app.use('/vitalia/tipocita', tipocitaRoutes);
 
 app.use('/vitalia/auth', authRoutes);
 
