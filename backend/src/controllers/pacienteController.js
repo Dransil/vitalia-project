@@ -26,6 +26,29 @@ exports.crearPaciente = async (req, res) => {
     }
 };
 
+// Modificar paciente
+exports.actualizarPaciente = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const paciente = await Paciente.findByPk(id);
+        if (!paciente) {
+            return res.status(404).json({ ok: false, msg: 'Paciente no encontrado' });
+        }
+        await paciente.update(req.body);
+        res.json({
+            ok: true,
+            msg: 'Datos del paciente actualizados con éxito',
+            data: paciente
+        });
+
+    } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ ok: false, msg: 'La cédula ya pertenece a otro paciente' });
+        }
+        res.status(500).json({ ok: false, error: error.message });
+    }
+};
+
 // Activar/desactivar paciente
 exports.cambiarEstadoPaciente = async (req, res) => {
     try {
