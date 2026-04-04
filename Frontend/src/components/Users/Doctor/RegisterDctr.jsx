@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
 import { MdUploadFile, MdDelete, MdSave, MdArrowBack, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../Services/Api';
 
 const RegisterDct = ({ onBack }) => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
@@ -33,7 +34,8 @@ const RegisterDct = ({ onBack }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -66,19 +68,64 @@ const RegisterDct = ({ onBack }) => {
       [permission]: !prev[permission],
     }));
   };
-  const handleback=() => {
-    navigate('/Doctor_Dashboard');
-  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      // Validaciones
+      if (!formData.nombre || !formData.apellido || !formData.email || !formData.cedula) {
+        setError('Por favor completa los campos requeridos');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.contraseña !== formData.confirmarContraseña) {
+        setError('Las contraseñas no coinciden');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.contraseña.length < 6) {
+        setError('La contraseña debe tener al menos 6 caracteres');
+        setLoading(false);
+        return;
+      }
+
+      // Preparar datos para enviar - Solo campos básicos de usuario
+      const dataToSend = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        email: formData.email,
+        cedula: formData.cedula,
+        telefono: formData.telefono,
+        id_especialidad: 1, // Hardcodeado por ahora
+        id_consultorio: 1, // Hardcodeado por ahora
+        contraseña_hash: formData.contraseña,
+        rol: 'dentista',
+        estado: 'activo',
+      };
+
+      // Realizar petición POST
+      const response = await api.post('/usuarios', dataToSend, true);
+
+      if (response.ok) {
+        setSuccess('Usuario creado exitosamente');
+        setTimeout(() => {
+          onBack?.();
+        }, 1500);
+      } else {
+        setError(response.msg || 'Error al crear el usuario');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message || 'Error al crear el usuario');
+    } finally {
       setLoading(false);
-      console.log('Nuevo usuario creado:', { formData, foto, permisos });
-      alert('Usuario creado exitosamente');
-      onBack?.();
-    }, 1500);
+    }
   };
 
   const permisosDisponibles = [
@@ -129,7 +176,7 @@ const RegisterDct = ({ onBack }) => {
           }}
         >
           <button
-            onClick={handleback}
+            onClick={onBack}
             style={{
               background: 'transparent',
               border: 'none',
@@ -164,6 +211,40 @@ const RegisterDct = ({ onBack }) => {
           padding: spacing.xl,
         }}
       >
+        {/* Mensajes de Error/Éxito */}
+        {error && (
+          <div
+            style={{
+              padding: spacing.md,
+              marginBottom: spacing.lg,
+              backgroundColor: colors.error.light,
+              border: `2px solid ${colors.error.main}`,
+              color: colors.error.dark,
+              borderRadius: borderRadius.lg,
+              fontWeight: typography.fontWeight.semibold,
+              fontSize: typography.fontSize.sm.size,
+            }}
+          >
+            {error}
+          </div>
+        )}
+        {success && (
+          <div
+            style={{
+              padding: spacing.md,
+              marginBottom: spacing.lg,
+              backgroundColor: colors.success.light,
+              border: `2px solid ${colors.success.main}`,
+              color: colors.success.dark,
+              borderRadius: borderRadius.lg,
+              fontWeight: typography.fontWeight.semibold,
+              fontSize: typography.fontSize.sm.size,
+            }}
+          >
+            {success}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div
             style={{
@@ -180,7 +261,8 @@ const RegisterDct = ({ onBack }) => {
                 gap: spacing.lg,
               }}
             >
-              {/* Sección Foto */}
+              {/* Sección Foto - OCULTA POR AHORA */}
+              {/* 
               <div
                 style={{
                   background: colors.neutral[0],
@@ -279,8 +361,10 @@ const RegisterDct = ({ onBack }) => {
                   </label>
                 )}
               </div>
+              */}
 
-              {/* Sección Permisos */}
+              {/* Sección Permisos - OCULTA POR AHORA */}
+              {/*
               <div
                 style={{
                   background: colors.neutral[0],
@@ -338,6 +422,7 @@ const RegisterDct = ({ onBack }) => {
                   ))}
                 </div>
               </div>
+              */}
             </div>
 
             {/* Columna Derecha - Formulario */}
@@ -551,7 +636,7 @@ const RegisterDct = ({ onBack }) => {
                     name="especialidad"
                     value={formData.especialidad}
                     onChange={handleInputChange}
-                    required
+                    disabled
                     style={{
                       width: '100%',
                       padding: spacing.md,
@@ -559,16 +644,11 @@ const RegisterDct = ({ onBack }) => {
                       borderRadius: borderRadius.md,
                       fontSize: typography.fontSize.sm.size,
                       outline: 'none',
-                      cursor: 'pointer',
+                      cursor: 'not-allowed',
+                      opacity: 0.6,
                     }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
                   >
-                    <option value="">Seleccionar especialidad</option>
-                    <option value="medicina_general">Medicina General</option>
-                    <option value="odontologia">Odontología</option>
-                    <option value="pediatria">Pediatría</option>
-                    <option value="cardiologia">Cardiología</option>
+                    <option value="1">Odontología (ID: 1)</option>
                   </select>
                 </div>
 
@@ -589,7 +669,7 @@ const RegisterDct = ({ onBack }) => {
                     name="consultorio"
                     value={formData.consultorio}
                     onChange={handleInputChange}
-                    required
+                    disabled
                     style={{
                       width: '100%',
                       padding: spacing.md,
@@ -597,13 +677,11 @@ const RegisterDct = ({ onBack }) => {
                       borderRadius: borderRadius.md,
                       fontSize: typography.fontSize.sm.size,
                       outline: 'none',
-                      cursor: 'pointer',
+                      cursor: 'not-allowed',
+                      opacity: 0.6,
                     }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
                   >
-                    <option value="">Seleccionar consultorio</option>
-                    <option value="consultorio_1">Consultorio Central</option>
+                    <option value="1">Consultorio Central (ID: 1)</option>
                   </select>
                 </div>
               </div>
