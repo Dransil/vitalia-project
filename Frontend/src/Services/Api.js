@@ -1,3 +1,4 @@
+// Cliente HTTP reutilizable con soporte para PATCH
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/vitalia';
 
 const getAuthToken = () => {
@@ -60,6 +61,27 @@ const api = {
     
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+    
+    return handleResponse(response);
+  },
+  
+  patch: async (endpoint, data = {}, requiresAuth = true) => {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (requiresAuth) {
+      const token = getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PATCH',
       headers,
       body: JSON.stringify(data)
     });

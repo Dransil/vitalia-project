@@ -30,8 +30,7 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.ok) {
-      // Login exitoso - redirigir al dashboard
-      navigate('/');
+      navigate('/'); 
     } else {
       // Mostrar error
       setError(result.msg || 'Error en el login');
