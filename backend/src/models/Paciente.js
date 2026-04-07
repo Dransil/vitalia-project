@@ -6,7 +6,7 @@ const Paciente = sequelize.define('Paciente', {
     nombre: { type: DataTypes.STRING(100), allowNull: false },
     apellido: { type: DataTypes.STRING(100), allowNull: false },
     cedula: { type: DataTypes.STRING(20), unique: true, allowNull: false },
-    fecha_nacimiento: { type: DataTypes.DATEONLY },
+    fecha_nacimiento: { type: DataTypes.DATEONLY, allowNull: false},
     email: { type: DataTypes.STRING(100) },
     telefono: { type: DataTypes.STRING(20) },
     direccion: { type: DataTypes.STRING(255) },
