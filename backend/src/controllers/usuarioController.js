@@ -1,37 +1,36 @@
-const { Usuario, Especialidad, Consultorio } = require('../models/associations');
+const { Usuario, Especialidad, Consultorio, Horario, UsuarioConsultorioEspecialidad } = require('../models/associations');
 const bcrypt = require('bcryptjs');
 
-// Obtener todos los usuarios
 exports.obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll({
+            attributes: ['id_usuario', 'nombre', 'apellido', 'email', 'rol', 'estado', 'telefono', 'dias_atencion'],
             include: [
-                { model: Especialidad, attributes: ['nombre'] },
-                { model: Consultorio, attributes: ['nombre', 'ciudad'] }
-            ],
-            attributes: ['id_usuario', 'nombre', 'apellido', 'email', 'rol', 'estado', 'telefono', 'dias_atencion']
+                {
+                    model: Horario,
+                    attributes: ['nombre', 'horario_inicio', 'horario_fin']
+                },
+                {
+                    model: UsuarioConsultorioEspecialidad,
+                    as: 'asignaciones',
+                    attributes: ['id', 'estado'],
+                    include: [
+                        { model: Consultorio,  attributes: ['nombre', 'ciudad'] },
+                        { model: Especialidad, attributes: ['nombre'] }
+                    ]
+                }
+            ]
         });
 
         if (usuarios.length === 0) {
-            return res.status(404).json({
-                ok: false,
-                msg: 'No se encontraron usuarios'
-            });
+            return res.status(404).json({ ok: false, msg: 'No se encontraron usuarios' });
         }
 
-        res.json({
-            ok: true,
-            msg: 'Usuarios obtenidos con éxito',
-            data: usuarios
-        });
+        res.json({ ok: true, msg: 'Usuarios obtenidos con éxito', data: usuarios });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            ok: false,
-            msg: 'Error al obtener usuarios',
-            error: error.message
-        });
+        res.status(500).json({ ok: false, msg: 'Error al obtener usuarios', error: error.message });
     }
 };
 
