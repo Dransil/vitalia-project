@@ -4,6 +4,7 @@ const usuarioController = require('../controllers/usuarioController');
 
 // Ruta: /vitalia/usuarios
 router.get('/', usuarioController.obtenerUsuarios);
+router.get('/:id', usuarioController.obtenerUsuarioPorId);
 router.post('/', usuarioController.crearUsuario);
 router.put('/:id', usuarioController.actualizarUsuario);
 router.patch('/estado/:id', usuarioController.cambiarEstadoUsuario);
