@@ -1,5 +1,6 @@
 const { Usuario, Especialidad, Consultorio, Horario, UsuarioConsultorioEspecialidad } = require('../models/associations');
 const bcrypt = require('bcryptjs');
+const sequelize = require('../config/db');
 
 exports.obtenerUsuarios = async (req, res) => {
     try {
@@ -36,21 +37,33 @@ exports.obtenerUsuarios = async (req, res) => {
 
 // Crear usuario
 exports.crearUsuario = async (req, res) => {
-    try {
-        const { contraseña_hash, ...datos } = req.body;
+    const t = await sequelize.transaction();
 
-        // Encriptar contraseña
+    try {
+        const { contraseña_hash, id_consultorio, id_especialidad, ...datos } = req.body;
+
         const salt = bcrypt.genSaltSync(10);
         const passwordEncriptada = bcrypt.hashSync(contraseña_hash, salt);
 
+        // Paso 1: crear el usuario
         const nuevoUsuario = await Usuario.create({
             ...datos,
             contraseña_hash: passwordEncriptada
-        });
+        }, { transaction: t });
+
+        await UsuarioConsultorioEspecialidad.create({
+            id_usuario:     nuevoUsuario.id_usuario,
+            id_consultorio: id_consultorio,
+            id_especialidad: id_especialidad
+        }, { transaction: t });
+
+        await t.commit();
 
         res.status(201).json({ ok: true, msg: 'Usuario creado', data: nuevoUsuario });
+
     } catch (error) {
-        res.status(500).json({ ok: false, msg: 'Error al crear', error: error.message });
+        await t.rollback();
+        res.status(500).json({ ok: false, msg: 'Error al crear usuario', error: error.message });
     }
 };
 
