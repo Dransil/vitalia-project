@@ -1,127 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../../Config/ThemeContext';
-import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail } from 'react-icons/md';
+import { useTheme } from '../../Config/ThemeContext';
+import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCheckCircle } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import * as doctoresService from '../../../Services/Doctoresservice';
+import * as especialidadesService from '../../Services/Especialidadesservice';
 
-const Doctor_Dashboard = () => {
+const Especialidades_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
   const navigate = useNavigate();
 
+  // Estados de búsqueda
   const [searchName, setSearchName] = useState('');
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchPhone, setSearchPhone] = useState('');
 
-  const [doctores, setDoctores] = useState([]);
+  // Estados de datos
+  const [especialidades, setEspecialidades] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Cargar especialidades al montar
   useEffect(() => {
-    loadDoctores();
+    loadEspecialidades();
   }, []);
 
-  const loadDoctores = async () => {
+  // Función para cargar especialidades
+  const loadEspecialidades = async () => {
     setIsLoading(true);
     setHasError(false);
-    const result = await doctoresService.getDoctores();
+    const result = await especialidadesService.getEspecialidades();
     
     if (result.ok) {
-      // Validar que sea un array
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      console.log(' Doctores cargados:', datosValidos);
-      setDoctores(datosValidos);
+      console.log('✅ Especialidades cargadas:', datosValidos);
+      setEspecialidades(datosValidos);
       setHasError(false);
     } else {
-      setDoctores([]);
+      setEspecialidades([]);
       setHasError(true);
-      setErrorMsg(result.msg || 'Error al cargar los doctores');
-      console.error('Error:', result.msg);
+      setErrorMsg(result.msg || 'Error al cargar las especialidades');
+      console.error('❌ Error:', result.msg);
     }
     setIsLoading(false);
   };
 
-  // Función para manejar búsqueda y filtros
+  // Función para manejar búsqueda
   const handleSearch = async () => {
-    // Si todos los filtros están vacíos, cargar todos
-    if (!searchName && !searchEmail && !searchPhone) {
-      loadDoctores();
+    if (!searchName) {
+      loadEspecialidades();
       return;
     }
 
     setIsLoading(true);
     setHasError(false);
-    const result = await doctoresService.searchDoctores(searchName, searchEmail, searchPhone);
+    const result = await especialidadesService.searchEspecialidades(searchName);
     
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      setDoctores(datosValidos);
+      setEspecialidades(datosValidos);
       setHasError(false);
     } else {
-      setDoctores([]);
+      setEspecialidades([]);
       setHasError(true);
       setErrorMsg(result.msg || 'Error en la búsqueda');
     }
     setIsLoading(false);
   };
 
+  // Ejecutar búsqueda con debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       handleSearch();
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchName, searchEmail, searchPhone]);
+  }, [searchName]);
 
-  const handleClearFilters = () => {
+  const handleClearFilter = () => {
     setSearchName('');
-    setSearchEmail('');
-    setSearchPhone('');
   };
 
-  const handleCreateUser = () => {
-    navigate('/Doctor_Register');
+  const handleCreateEspecialidad = () => {
+    navigate('/especialidad/crear');
   };
 
-  const handleEditDoctor = (id) => {
-    navigate(`/doctor/edit/${id}`);
+  const handleEditEspecialidad = (id) => {
+    navigate(`/especialidad/edit/${id}`);
   };
 
-  const handleDeleteDoctor = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este doctor?')) {
-      const result = await doctoresService.cambiarEstadoDoctor(id);
+  const handleToggleEstado = async (id) => {
+    const result = await especialidadesService.cambiarEstadoEspecialidad(id);
+    if (result.ok) {
+      loadEspecialidades();
+    } else {
+      alert(result.msg || 'Error al cambiar el estado');
+    }
+  };
+
+  const handleDeleteEspecialidad = async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta especialidad?')) {
+      const result = await especialidadesService.cambiarEstadoEspecialidad(id);
       if (result.ok) {
-        alert(result.msg || 'Doctor desactivado');
-        loadDoctores();
+        alert(result.msg || 'Especialidad desactivada');
+        loadEspecialidades();
       } else {
-        alert(result.msg || 'Error al desactivar el doctor');
+        alert(result.msg || 'Error al desactivar la especialidad');
       }
     }
   };
 
-  // Función para sanitizar todos los campos
-  const sanitizeDoctor = (doctor) => {
-    // Validar que el objeto doctor no sea nulo o indefinido
-    if (!doctor || typeof doctor !== 'object') {
-      console.warn('Datos inválidos para doctor:', doctor);
-      return null;
-    }
+  // Sanitizar datos
+  const sanitizeEspecialidad = (especialidad) => {
+    if (!especialidad) return null;
 
     return {
-      id: doctor.id_usuario || doctor.id || 0,
-      nombre: doctor.nombre || 'Sin nombre',
-      apellido: doctor.apellido || 'Sin apellido',
-      email: doctor.email || 'Sin email',
-      telefono: doctor.telefono || 'N/A',
-      cedula: doctor.cedula || 'N/A',
-      rol: doctor.rol || 'Sin rol',
-      estado: doctor.estado || 'desconocido',
-      horario_inicio: doctor.horario_inicio || 'No especificado',
-      horario_fin: doctor.horario_fin || 'No especificado',
-      dias_atencion: doctor.dias_atencion || 'No especificado',
-      id_especialidad: doctor.id_especialidad || null,
-      id_consultorio: doctor.id_consultorio || null,
-      fecha_registro: doctor.fecha_registro || null,
-      ultimo_acceso: doctor.ultimo_acceso || null,
+      id: especialidad.id_especialidad || especialidad.id || 0,
+      nombre: especialidad.nombre || 'Sin nombre',
+      descripcion: especialidad.descripcion || 'Sin descripción',
+      estado: especialidad.estado || 'inactiva',
+      fecha_creacion: especialidad.fecha_creacion || null,
     };
   };
 
@@ -138,14 +132,14 @@ const Doctor_Dashboard = () => {
             marginBottom: spacing.md,
           }}
         >
-          Registro General de Doctores
+          Especialidades Médicas
         </h1>
         <p style={{ color: colors.neutral[600], margin: 0 }}>
-          Gestiona todos los profesionales médicos del sistema
+          Total: {especialidades.length} especialidades disponibles
         </p>
       </div>
 
-      {/* Sección de Filtros */}
+      {/* Sección de Búsqueda */}
       <div
         style={{
           background: colors.neutral[0],
@@ -154,200 +148,91 @@ const Doctor_Dashboard = () => {
           padding: spacing.lg,
           boxShadow: shadows.md,
           marginBottom: spacing.lg,
+          display: 'flex',
+          gap: spacing.lg,
+          alignItems: 'flex-end',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr auto',
-            gap: spacing.lg,
-            alignItems: 'flex-end',
-          }}
-        >
-          {/* Campo Nombre/Apellido */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[900],
-                marginBottom: spacing.sm,
-              }}
-            >
-              Nombre o Apellido
-            </label>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                background: colors.neutral[50],
-                border: `2px solid ${colors.neutral[200]}`,
-                borderRadius: borderRadius.md,
-              }}
-            >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
-              <input
-                type="text"
-                value={searchName}
-                onChange={e => setSearchName(e.target.value)}
-                placeholder="Buscar por nombre o apellido..."
-                style={{
-                  flex: 1,
-                  padding: `${spacing.md} ${spacing.md} ${spacing.md} ${spacing['2xl']}`,
-                  border: 'none',
-                  background: 'transparent',
-                  fontSize: typography.fontSize.sm.size,
-                  color: colors.neutral[900],
-                  outline: 'none',
-                }}
-                onFocus={e => e.target.parentElement.style.borderColor = config.theme.colors.primary}
-                onBlur={e => e.target.parentElement.style.borderColor = colors.neutral[200]}
-              />
-            </div>
-          </div>
-
-          {/* Campo Email */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[900],
-                marginBottom: spacing.sm,
-              }}
-            >
-              Email
-            </label>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                background: colors.neutral[50],
-                border: `2px solid ${colors.neutral[200]}`,
-                borderRadius: borderRadius.md,
-              }}
-            >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
-              <input
-                type="email"
-                value={searchEmail}
-                onChange={e => setSearchEmail(e.target.value)}
-                placeholder="Buscar por email..."
-                style={{
-                  flex: 1,
-                  padding: `${spacing.md} ${spacing.md} ${spacing.md} ${spacing['2xl']}`,
-                  border: 'none',
-                  background: 'transparent',
-                  fontSize: typography.fontSize.sm.size,
-                  color: colors.neutral[900],
-                  outline: 'none',
-                }}
-                onFocus={e => e.target.parentElement.style.borderColor = config.theme.colors.primary}
-                onBlur={e => e.target.parentElement.style.borderColor = colors.neutral[200]}
-              />
-            </div>
-          </div>
-
-          {/* Campo Teléfono */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[900],
-                marginBottom: spacing.sm,
-              }}
-            >
-              Teléfono
-            </label>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                background: colors.neutral[50],
-                border: `2px solid ${colors.neutral[200]}`,
-                borderRadius: borderRadius.md,
-              }}
-            >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
-              <input
-                type="tel"
-                value={searchPhone}
-                onChange={e => setSearchPhone(e.target.value)}
-                placeholder="Buscar por teléfono..."
-                style={{
-                  flex: 1,
-                  padding: `${spacing.md} ${spacing.md} ${spacing.md} ${spacing['2xl']}`,
-                  border: 'none',
-                  background: 'transparent',
-                  fontSize: typography.fontSize.sm.size,
-                  color: colors.neutral[900],
-                  outline: 'none',
-                }}
-                onFocus={e => e.target.parentElement.style.borderColor = config.theme.colors.primary}
-                onBlur={e => e.target.parentElement.style.borderColor = colors.neutral[200]}
-              />
-            </div>
-          </div>
-
-          {/* Botón Quitar Filtros */}
-          <button
-            onClick={handleClearFilters}
+        {/* Campo Búsqueda */}
+        <div style={{ flex: 1 }}>
+          <label
             style={{
-              padding: `${spacing.md} ${spacing.lg}`,
-              background: colors.neutral[200],
-              color: colors.neutral[900],
-              border: 'none',
-              borderRadius: borderRadius.md,
-              fontWeight: typography.fontWeight.semibold,
+              display: 'block',
               fontSize: typography.fontSize.sm.size,
-              cursor: 'pointer',
-              transition: '0.3s',
+              fontWeight: typography.fontWeight.semibold,
+              color: colors.neutral[900],
+              marginBottom: spacing.sm,
+            }}
+          >
+            Buscar Especialidad
+          </label>
+          <div
+            style={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              gap: spacing.sm,
-              justifyContent: 'center',
+              background: colors.neutral[50],
+              border: `2px solid ${colors.neutral[200]}`,
+              borderRadius: borderRadius.md,
             }}
-            onMouseEnter={e => e.target.style.background = colors.neutral[300]}
-            onMouseLeave={e => e.target.style.background = colors.neutral[200]}
           >
-            <MdClose size={18} />
-            Quitar Filtros
-          </button>
+            <MdSearch
+              size={20}
+              style={{
+                position: 'absolute',
+                left: spacing.md,
+                color: colors.neutral[400],
+              }}
+            />
+            <input
+              type="text"
+              value={searchName}
+              onChange={e => setSearchName(e.target.value)}
+              placeholder="Buscar por nombre..."
+              style={{
+                flex: 1,
+                padding: `${spacing.md} ${spacing.md} ${spacing.md} ${spacing['2xl']}`,
+                border: 'none',
+                background: 'transparent',
+                fontSize: typography.fontSize.sm.size,
+                color: colors.neutral[900],
+                outline: 'none',
+              }}
+              onFocus={e => e.target.parentElement.style.borderColor = config.theme.colors.primary}
+              onBlur={e => e.target.parentElement.style.borderColor = colors.neutral[200]}
+            />
+          </div>
         </div>
+
+        {/* Botón Limpiar */}
+        <button
+          onClick={handleClearFilter}
+          style={{
+            padding: `${spacing.md} ${spacing.lg}`,
+            background: colors.neutral[200],
+            color: colors.neutral[900],
+            border: 'none',
+            borderRadius: borderRadius.md,
+            fontWeight: typography.fontWeight.semibold,
+            fontSize: typography.fontSize.sm.size,
+            cursor: 'pointer',
+            transition: '0.3s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+          onMouseEnter={e => e.target.style.background = colors.neutral[300]}
+          onMouseLeave={e => e.target.style.background = colors.neutral[200]}
+        >
+          <MdClose size={18} />
+          Limpiar
+        </button>
       </div>
 
-      {/* Botón Crear Usuario */}
+      {/* Botón Crear */}
       <div style={{ marginBottom: spacing.lg }}>
         <button
-          onClick={handleCreateUser}
+          onClick={handleCreateEspecialidad}
           style={{
             padding: `${spacing.md} ${spacing.lg}`,
             background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
@@ -366,11 +251,11 @@ const Doctor_Dashboard = () => {
           onMouseLeave={e => e.target.style.opacity = '1'}
         >
           <MdAdd size={20} />
-          Crear Nuevo Usuario
+          Crear Nueva Especialidad
         </button>
       </div>
 
-      {/* Contenedor de Usuarios */}
+      {/* Contenedor Principal */}
       <div
         style={{
           background: colors.neutral[0],
@@ -380,10 +265,10 @@ const Doctor_Dashboard = () => {
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          height: '600px',
+          minHeight: '500px',
         }}
       >
-        {/* Contenido Scrollable */}
+        {/* Contenido */}
         <div
           style={{
             flex: 1,
@@ -444,11 +329,11 @@ const Doctor_Dashboard = () => {
                   maxWidth: '300px',
                 }}
               >
-                {errorMsg || 'Parece que ocurrió un problema al intentar cargar la lista de doctores. Por favor, intenta más tarde.'}
+                {errorMsg || 'Parece que ocurrió un problema. Por favor, intenta más tarde.'}
               </p>
 
               <button
-                onClick={loadDoctores}
+                onClick={loadEspecialidades}
                 style={{
                   padding: `${spacing.sm} ${spacing.lg}`,
                   background: colors.error.main,
@@ -494,11 +379,11 @@ const Doctor_Dashboard = () => {
                   fontSize: typography.fontSize.sm.size,
                 }}
               >
-                Cargando doctores...
+                Cargando especialidades...
               </p>
             </div>
-          ) : doctores && doctores.length > 0 ? (
-            // Data State - Tabla de doctores
+          ) : especialidades && especialidades.length > 0 ? (
+            // Data State - Lista Compacta
             <div
               style={{
                 display: 'flex',
@@ -506,9 +391,8 @@ const Doctor_Dashboard = () => {
                 gap: spacing.md,
               }}
             >
-              {doctores.map((doctor) => {
-                // SANITIZAR TODOS LOS DATOS
-                const sanitized = sanitizeDoctor(doctor);
+              {especialidades.map((especialidad) => {
+                const sanitized = sanitizeEspecialidad(especialidad);
                 if (!sanitized) return null;
 
                 return (
@@ -523,7 +407,6 @@ const Doctor_Dashboard = () => {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       transition: '0.3s all',
-                      cursor: 'pointer',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.background = colors.neutral[100];
@@ -536,94 +419,54 @@ const Doctor_Dashboard = () => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    {/* Información del Doctor */}
+                    {/* Información de la Especialidad */}
                     <div style={{ flex: 1 }}>
                       <h4
                         style={{
-                          fontSize: typography?.fontSize?.md?.size || '16px',
-                          fontWeight: typography?.fontWeight?.bold || 'bold',
+                          fontSize: typography.fontSize.md.size,
+                          fontWeight: typography.fontWeight.bold,
                           color: colors.neutral[900],
                           margin: 0,
                           marginBottom: spacing.sm,
                         }}
                       >
-                        {sanitized.nombre} {sanitized.apellido}
+                        {sanitized.nombre}
                       </h4>
 
-                      <div
+                      <p
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
-                          gap: spacing.md,
+                          fontSize: typography.fontSize.sm.size,
+                          color: colors.neutral[600],
+                          margin: 0,
+                          marginBottom: spacing.sm,
                         }}
                       >
-                        {/* Email */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.sm,
-                          }}
-                        >
-                          <MdEmail size={16} style={{ color: colors.neutral[500] }} />
-                          <span
-                            style={{
-                              fontSize: typography.fontSize.xs.size,
-                              color: colors.neutral[600],
-                            }}
-                          >
-                            {sanitized.email}
-                          </span>
-                        </div>
+                        {sanitized.descripcion}
+                      </p>
 
-                        {/* Teléfono */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.sm,
-                          }}
-                        >
-                          <MdCall size={16} style={{ color: colors.neutral[500] }} />
-                          <span
-                            style={{
-                              fontSize: typography.fontSize.xs.size,
-                              color: colors.neutral[600],
-                            }}
-                          >
-                            {sanitized.telefono}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Rol y Estado */}
+                      {/* Estado */}
                       <div
                         style={{
                           display: 'flex',
-                          gap: spacing.md,
-                          marginTop: spacing.md,
+                          alignItems: 'center',
+                          gap: spacing.sm,
                         }}
                       >
-                        <span
+                        <MdCheckCircle
+                          size={16}
                           style={{
-                            fontSize: typography.fontSize.xs.size,
-                            padding: `${spacing.sm/2} ${spacing.sm}`,
-                            background: config.theme.colors.primary,
-                            color: colors.neutral[0],
-                            borderRadius: borderRadius.sm,
-                            textTransform: 'capitalize',
+                            color: sanitized.estado === 'activa' ? colors.success.main : colors.error.main,
                           }}
-                        >
-                          {sanitized.rol}
-                        </span>
+                        />
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
                             padding: `${spacing.sm/2} ${spacing.sm}`,
-                            background: sanitized.estado === 'activo' ? colors.success.light : colors.error.light,
-                            color: sanitized.estado === 'activo' ? colors.success.dark : colors.error.dark,
+                            background: sanitized.estado === 'activa' ? colors.success.light : colors.error.light,
+                            color: sanitized.estado === 'activa' ? colors.success.dark : colors.error.dark,
                             borderRadius: borderRadius.sm,
                             textTransform: 'capitalize',
+                            fontWeight: 'bold',
                           }}
                         >
                           {sanitized.estado}
@@ -640,7 +483,7 @@ const Doctor_Dashboard = () => {
                       }}
                     >
                       <button
-                        onClick={() => handleEditDoctor(sanitized.id)}
+                        onClick={() => handleEditEspecialidad(sanitized.id)}
                         style={{
                           padding: `${spacing.sm} ${spacing.md}`,
                           background: config.theme.colors.primary,
@@ -662,7 +505,7 @@ const Doctor_Dashboard = () => {
                       </button>
 
                       <button
-                        onClick={() => handleDeleteDoctor(sanitized.id)}
+                        onClick={() => handleDeleteEspecialidad(sanitized.id)}
                         style={{
                           padding: `${spacing.sm} ${spacing.md}`,
                           background: colors.error.main,
@@ -700,7 +543,7 @@ const Doctor_Dashboard = () => {
               }}
             >
               <div style={{ fontSize: '48px', marginBottom: spacing.lg }}>
-                📋
+                🏥
               </div>
 
               <h3
@@ -713,7 +556,7 @@ const Doctor_Dashboard = () => {
                   textAlign: 'center',
                 }}
               >
-                Sin doctores
+                Sin especialidades
               </h3>
 
               <p
@@ -725,14 +568,14 @@ const Doctor_Dashboard = () => {
                   maxWidth: '300px',
                 }}
               >
-                No hay doctores registrados. Crea uno para comenzar.
+                No hay especialidades registradas. Crea una para comenzar.
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* CSS para animación de carga */}
+      {/* CSS para animación */}
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -746,4 +589,4 @@ const Doctor_Dashboard = () => {
   );
 };
 
-export default Doctor_Dashboard;
+export default Especialidades_Dashboard;

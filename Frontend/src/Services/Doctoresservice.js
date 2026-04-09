@@ -1,97 +1,101 @@
-// Servicio para gestión de doctores
-// CORREGIDO - Coincide exactamente con las rutas del backend
+// doctorService.js - CORREGIDO
 import api from './Api';
 
 /**
- * Obtener lista de todos los doctores
+ * Obtener lista de todos los doctores (usuarios con rol médico/dentista)
  * GET /vitalia/usuarios
- * @returns {Promise} Lista de doctores
  */
 export const getDoctores = async () => {
   try {
     const response = await api.get('/usuarios');
     
-    console.log('🔍 Respuesta del backend:', response);
-    
-    // El backend retorna: { ok: true, msg: '...', data: [...] }
+    // El backend puede devolver diferentes estructuras
     let doctoresArray = [];
     
+    // Caso 1: { ok: true, data: [...] }
     if (response.data && Array.isArray(response.data)) {
       doctoresArray = response.data;
-    } else if (Array.isArray(response)) {
+    }
+    // Caso 2: { usuarios: [...] }
+    else if (response.usuarios && Array.isArray(response.usuarios)) {
+      doctoresArray = response.usuarios;
+    }
+    // Caso 3: directamente un array
+    else if (Array.isArray(response)) {
       doctoresArray = response;
     }
+    // Caso 4: { ok: true, msg: "...", data: null } pero con usuarios en otra parte
+    else if (response.data === null && response.msg) {
+      // Solo mensaje, sin datos
+      return {
+        ok: true,
+        msg: response.msg || 'No hay doctores registrados',
+        data: []
+      };
+    }
 
-    console.log('✅ Doctores procesados:', doctoresArray);
+    // Filtrar solo usuarios con rol médico o dentista (si aplica)
+    // Tu tabla usuario tiene roles: 'admin', 'dentista', 'medico'
+    const doctoresFiltrados = doctoresArray.filter(usuario => 
+      usuario && (usuario.rol === 'dentista' || usuario.rol === 'medico' || usuario.rol === 'admin')
+    );
+
+    console.log('Doctores cargados:', doctoresFiltrados.length);
     
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Doctores cargados',
-      data: doctoresArray || [],
+      ok: true,
+      msg: 'Doctores cargados exitosamente',
+      data: doctoresFiltrados,
     };
   } catch (error) {
-    console.error('❌ Error al obtener doctores:', error);
+    console.error('Error al obtener doctores:', error);
     return {
       ok: false,
-      msg: error.data?.msg || 'Error al cargar los doctores',
-      error: error.message,
+      msg: error.data?.msg || error.message || 'Error al cargar los doctores',
       data: [],
     };
   }
 };
 
 /**
- * Buscar/filtrar doctores localmente
- * @param {string} searchName - Buscar por nombre o apellido
- * @param {string} searchEmail - Buscar por email
- * @param {string} searchPhone - Buscar por teléfono
- * @returns {Promise} Lista de doctores filtrados
+ * Buscar doctores por nombre, email o teléfono
  */
-export const searchDoctores = async (searchName = '', searchEmail = '', searchPhone = '') => {
+export const searchDoctores = async (searchParams = {}) => {
+  const { nombre = '', email = '', telefono = '' } = searchParams;
+  
   try {
-    const response = await api.get('/usuarios');
+    const result = await getDoctores();
     
-    // Obtener el array de doctores
-    let doctoresArray = [];
-    if (response.data && Array.isArray(response.data)) {
-      doctoresArray = response.data;
-    } else if (Array.isArray(response)) {
-      doctoresArray = response;
-    } else {
-      return { ok: false, msg: 'Formato de datos inválido', data: [] };
+    if (!result.ok || !result.data.length) {
+      return result;
     }
 
-    // Validar que doctoresArray sea un array
-    if (!Array.isArray(doctoresArray)) {
-      console.warn('doctoresArray no es un array:', doctoresArray);
-      return { ok: false, msg: 'Formato de datos inválido', data: [] };
-    }
+    let doctoresFiltrados = [...result.data];
 
-    // Filtrar en el frontend
-    let doctoresFiltrados = doctoresArray;
-
-    if (searchName) {
+    if (nombre) {
+      const searchTerm = nombre.toLowerCase();
       doctoresFiltrados = doctoresFiltrados.filter(doctor => {
-        if (!doctor) return false;
         const nombreCompleto = `${doctor.nombre || ''} ${doctor.apellido || ''}`.toLowerCase();
-        return nombreCompleto.includes(searchName.toLowerCase());
+        return nombreCompleto.includes(searchTerm);
       });
     }
 
-    if (searchEmail) {
+    if (email) {
+      const searchEmail = email.toLowerCase();
       doctoresFiltrados = doctoresFiltrados.filter(doctor =>
-        doctor && doctor.email && doctor.email.toLowerCase().includes(searchEmail.toLowerCase())
+        doctor.email && doctor.email.toLowerCase().includes(searchEmail)
       );
     }
 
-    if (searchPhone) {
+    if (telefono) {
       doctoresFiltrados = doctoresFiltrados.filter(doctor =>
-        doctor && doctor.telefono && doctor.telefono.includes(searchPhone)
+        doctor.telefono && doctor.telefono.includes(telefono)
       );
     }
 
     return {
       ok: true,
+      msg: `${doctoresFiltrados.length} doctores encontrados`,
       data: doctoresFiltrados,
     };
   } catch (error) {
@@ -99,61 +103,91 @@ export const searchDoctores = async (searchName = '', searchEmail = '', searchPh
     return {
       ok: false,
       msg: 'Error al buscar los doctores',
-      error: error.message,
       data: [],
     };
   }
 };
 
 /**
- * Obtener un doctor específico
- * @param {number} id - ID del doctor
- * @returns {Promise} Datos del doctor
+ * Obtener un doctor específico por ID
  */
 export const getDoctorById = async (id) => {
   try {
-    const response = await api.get('/usuarios');
+    // Intentar obtener directamente por ID si el backend lo soporta
+    const response = await api.get(`/usuarios/${id}`);
     
-    let doctoresArray = [];
-    if (response.data && Array.isArray(response.data)) {
-      doctoresArray = response.data;
-    } else if (Array.isArray(response)) {
-      doctoresArray = response;
+    // El backend puede devolver diferentes estructuras
+    let doctor = null;
+    
+    if (response.data) {
+      doctor = response.data;
+    } else if (response.usuario) {
+      doctor = response.usuario;
+    } else if (response.id_usuario || response.id) {
+      doctor = response;
     }
-
-    const doctor = doctoresArray.find(d => d.id_usuario === id || d.id === id);
     
     if (!doctor) {
       return { ok: false, msg: 'Doctor no encontrado', data: null };
     }
 
-    return { ok: true, data: doctor };
+    return { ok: true, msg: 'Doctor encontrado', data: doctor };
   } catch (error) {
-    console.error('Error al obtener doctor:', error);
-    return { ok: false, msg: 'Error al cargar el doctor', error: error.message, data: null };
+    // Si falla la búsqueda directa, buscar en la lista completa
+    console.log(`Buscando doctor ${id} en lista completa...`);
+    const result = await getDoctores();
+    
+    if (result.ok && result.data.length) {
+      const doctor = result.data.find(d => d.id_usuario === id || d.id === id);
+      if (doctor) {
+        return { ok: true, msg: 'Doctor encontrado', data: doctor };
+      }
+    }
+    
+    return { 
+      ok: false, 
+      msg: error.data?.msg || 'Error al cargar el doctor', 
+      data: null 
+    };
   }
 };
 
 /**
  * Crear nuevo doctor
  * POST /vitalia/usuarios
- * @param {object} doctorData - Datos del doctor
- * @returns {Promise} Doctor creado
  */
 export const createDoctor = async (doctorData) => {
   try {
-    const response = await api.post('/usuarios', doctorData);
+    // Validar datos requeridos según tu tabla `usuario`
+    const requiredFields = ['nombre', 'apellido', 'email', 'cedula', 'contraseña_hash'];
+    const missingFields = requiredFields.filter(field => !doctorData[field]);
+    
+    if (missingFields.length > 0) {
+      return {
+        ok: false,
+        msg: `Faltan campos requeridos: ${missingFields.join(', ')}`,
+        data: null,
+      };
+    }
+
+    const response = await api.post('/usuarios', {
+      ...doctorData,
+      rol: doctorData.rol || 'dentista', // por defecto dentista
+      estado: doctorData.estado || 'activo',
+      horario_id: doctorData.horario_id || null,
+      dias_atencion: doctorData.dias_atencion || 'Lun,Mar,Mié,Jue,Vie'
+    });
+    
     return {
-      ok: response.ok !== false,
+      ok: true,
       msg: response.msg || 'Doctor creado exitosamente',
-      data: response.data,
+      data: response.data || response.usuario || response,
     };
   } catch (error) {
     console.error('Error al crear doctor:', error);
     return {
       ok: false,
-      msg: error.data?.msg || 'Error al crear el doctor',
-      error: error.message,
+      msg: error.data?.msg || error.message || 'Error al crear el doctor',
       data: null,
     };
   }
@@ -162,24 +196,20 @@ export const createDoctor = async (doctorData) => {
 /**
  * Actualizar doctor
  * PUT /vitalia/usuarios/:id
- * @param {number} id - ID del doctor
- * @param {object} doctorData - Datos a actualizar
- * @returns {Promise} Doctor actualizado
  */
 export const updateDoctor = async (id, doctorData) => {
   try {
     const response = await api.put(`/usuarios/${id}`, doctorData);
     return {
-      ok: response.ok !== false,
+      ok: true,
       msg: response.msg || 'Doctor actualizado exitosamente',
-      data: response.data,
+      data: response.data || response.usuario || response,
     };
   } catch (error) {
     console.error('Error al actualizar doctor:', error);
     return {
       ok: false,
-      msg: error.data?.msg || 'Error al actualizar el doctor',
-      error: error.message,
+      msg: error.data?.msg || error.message || 'Error al actualizar el doctor',
       data: null,
     };
   }
@@ -187,16 +217,14 @@ export const updateDoctor = async (id, doctorData) => {
 
 /**
  * Cambiar estado del doctor (activo/inactivo)
- * PATCH /vitalia/usuarios/estado/:id
- * ⚠️ OJO: En tu backend es PATCH, no PUT
- * ⚠️ OJO: La ruta es /estado/:id, no /:id/estado
- * @param {number} id - ID del doctor
- * @returns {Promise} Resultado de cambio de estado
+ * Usa PATCH /vitalia/usuarios/:id (actualización parcial)
  */
-export const cambiarEstadoDoctor = async (id) => {
+// doctorService.js - Cambiar la función cambiarEstadoDoctor
+export const cambiarEstadoDoctor = async (id, nuevoEstado = null) => {
   try {
     // Tu backend usa PATCH /estado/:id
-    const response = await api.patch(`/estado/${id}`);
+    const response = await api.patch(`/estado/${id}`); // ← Cambiado: agregar /estado/
+    
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Estado actualizado',
@@ -213,20 +241,69 @@ export const cambiarEstadoDoctor = async (id) => {
 };
 
 /**
- * Eliminar doctor (usa cambiar estado - soft delete)
- * @param {number} id - ID del doctor
- * @returns {Promise} Resultado de la eliminación
+ * Eliminar doctor (soft delete - cambia estado a inactivo)
  */
 export const deleteDoctor = async (id) => {
   try {
+    // Intentar DELETE primero (si el backend lo soporta como soft delete)
     const response = await api.delete(`/usuarios/${id}`);
     return {
-      ok: response.ok !== false,
+      ok: true,
       msg: response.msg || 'Doctor eliminado exitosamente',
     };
   } catch (error) {
-    console.warn('DELETE no disponible, intentando cambiar estado...');
+    // Si DELETE no está implementado o falla, usar cambio de estado
+    console.warn('DELETE no disponible, usando cambio de estado...');
     return await cambiarEstadoDoctor(id);
+  }
+};
+
+/**
+ * Asignar especialidad y consultorio a un doctor (usar tabla pivote)
+ * POST /vitalia/usuarios/:id/asignaciones
+ */
+export const asignarEspecialidadConsultorio = async (idUsuario, idConsultorio, idEspecialidad) => {
+  try {
+    const response = await api.post('/usuarios/asignaciones', {
+      id_usuario: idUsuario,
+      id_consultorio: idConsultorio,
+      id_especialidad: idEspecialidad
+    });
+    
+    return {
+      ok: true,
+      msg: response.msg || 'Asignación realizada exitosamente',
+      data: response.data,
+    };
+  } catch (error) {
+    console.error('Error al asignar especialidad:', error);
+    return {
+      ok: false,
+      msg: error.data?.msg || error.message || 'Error al asignar especialidad',
+    };
+  }
+};
+
+/**
+ * Obtener especialidades y consultorios de un doctor
+ * GET /vitalia/usuarios/:id/asignaciones
+ */
+export const getDoctorAsignaciones = async (idUsuario) => {
+  try {
+    const response = await api.get(`/usuarios/${idUsuario}/asignaciones`);
+    
+    return {
+      ok: true,
+      msg: response.msg || 'Asignaciones obtenidas',
+      data: response.data || response.asignaciones || [],
+    };
+  } catch (error) {
+    console.error('Error al obtener asignaciones:', error);
+    return {
+      ok: false,
+      msg: error.data?.msg || error.message || 'Error al obtener asignaciones',
+      data: [],
+    };
   }
 };
 
@@ -238,4 +315,6 @@ export default {
   updateDoctor,
   cambiarEstadoDoctor,
   deleteDoctor,
+  asignarEspecialidadConsultorio,
+  getDoctorAsignaciones,
 };

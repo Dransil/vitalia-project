@@ -8,6 +8,9 @@ import MainDashboard from './components/Main/MainDashboard.jsx';
 import RegisterLg from './components/Auth/Registerlg.jsx';
 import Doctor_Dashboard from './components/Users/Doctor/DashboardDctr.jsx';
 import RegisterDct from './components/Users/Doctor/RegisterDctr.jsx';
+import DashboardPct from './components/Users/Patient/DashboardPct.jsx';
+import Especialidades_Dashboard from './components/Espc/Especialidad.jsx';
+import PatientRegister from './components/Users/Patient/RegisterPct.jsx';
 
 // 👈 Layout con Sidebar para rutas protegidas
 const ProtectedLayout = () => {
@@ -43,9 +46,11 @@ function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/Settings" element={<Settings />} />
             <Route path="/" element={<MainDashboard />} />
+            <Route path="/Patient_Dashboard" element={<DashboardPct />} />
             <Route path="/Doctor_Dashboard" element={<Doctor_Dashboard />} />
             <Route path="/Doctor_Register" element={<RegisterDct />} />
-            {/* Aquí agregas más rutas protegidas cuando las necesites */}
+            <Route path="/specialty" element={<Especialidades_Dashboard/>} />         
+            <Route path='/Patient_Register' element={<PatientRegister />} />
           </Route>
         </Routes>
       </ThemeProvider>
