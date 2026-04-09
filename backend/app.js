@@ -9,6 +9,7 @@ const app = express();
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
 const PacienteRoutes = require('./src/routes/pacienteRoutes');
 const tipocitaRoutes = require('./src/routes/tipocitaRoutes');
+const citaRoutes = require('./src/routes/citaRoutes')
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -25,6 +26,7 @@ app.get('/test', (req, res) => {
 app.use('/vitalia/usuarios', usuarioRoutes);
 app.use('/vitalia/pacientes', PacienteRoutes);
 app.use('/vitalia/tipocita', tipocitaRoutes);
+app.use('/vitalia/citas', citaRoutes);
 
 app.use('/vitalia/auth', authRoutes);
 
