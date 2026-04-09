@@ -34,3 +34,24 @@ exports.obtenerCitas = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener citas', error: error.message });
     }
 };
+
+// Crear cita
+exports.crearCita = async (req, res) => {
+    try {
+        const nuevaCita = await Cita.create(req.body);
+
+        const citaCompleta = await Cita.findByPk(nuevaCita.id_cita, {
+            include: [
+                { model: Usuario,  as: 'Doctor', attributes: ['nombre', 'apellido'] },
+                { model: Paciente, attributes: ['nombre', 'apellido'] },
+                { model: TipoCita, attributes: ['nombre', 'costo_base'] }
+            ]
+        });
+
+        res.status(201).json({ ok: true, msg: 'Cita creada con éxito', data: citaCompleta });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al crear cita', error: error.message });
+    }
+};
