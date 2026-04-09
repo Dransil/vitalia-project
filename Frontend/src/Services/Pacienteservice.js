@@ -1,5 +1,5 @@
-// Servicio para gestión de pacientes
-// Adaptado a los endpoints existentes en el backend
+// Servicio para gestión de pacientes - VERSIÓN COMPLETA
+// Con todos los campos de la tabla paciente
 import api from './Api';
 
 /**
@@ -13,7 +13,6 @@ export const getPacientes = async () => {
     
     console.log('🔍 Respuesta del backend:', response);
     
-    // El backend retorna: { ok: true, msg: '...', data: [...] }
     let pacientesArray = [];
     
     if (response.data && Array.isArray(response.data)) {
@@ -51,7 +50,6 @@ export const searchPacientes = async (searchName = '', searchEmail = '', searchP
   try {
     const response = await api.get('/pacientes');
     
-    // Obtener el array de pacientes
     let pacientesArray = [];
     if (response.data && Array.isArray(response.data)) {
       pacientesArray = response.data;
@@ -61,13 +59,11 @@ export const searchPacientes = async (searchName = '', searchEmail = '', searchP
       return { ok: false, msg: 'Formato de datos inválido', data: [] };
     }
 
-    // Validar que pacientesArray sea un array
     if (!Array.isArray(pacientesArray)) {
       console.warn('pacientesArray no es un array:', pacientesArray);
       return { ok: false, msg: 'Formato de datos inválido', data: [] };
     }
 
-    // Filtrar en el frontend
     let pacientesFiltrados = pacientesArray;
 
     if (searchName) {
@@ -112,22 +108,13 @@ export const searchPacientes = async (searchName = '', searchEmail = '', searchP
  */
 export const getPacienteById = async (id) => {
   try {
-    const response = await api.get('/pacientes');
+    const response = await api.get(`/pacientes/${id}`);
     
-    let pacientesArray = [];
-    if (response.data && Array.isArray(response.data)) {
-      pacientesArray = response.data;
-    } else if (Array.isArray(response)) {
-      pacientesArray = response;
+    if (response.data) {
+      return { ok: true, data: response.data };
     }
 
-    const paciente = pacientesArray.find(p => p.id_paciente === id || p.id === id);
-    
-    if (!paciente) {
-      return { ok: false, msg: 'Paciente no encontrado', data: null };
-    }
-
-    return { ok: true, data: paciente };
+    return { ok: false, msg: 'Paciente no encontrado', data: null };
   } catch (error) {
     console.error('Error al obtener paciente:', error);
     return { ok: false, msg: 'Error al cargar el paciente', error: error.message, data: null };
@@ -137,7 +124,7 @@ export const getPacienteById = async (id) => {
 /**
  * Crear nuevo paciente
  * POST /vitalia/pacientes
- * @param {object} pacienteData - Datos del paciente
+ * @param {object} pacienteData - Datos del paciente con TODOS los campos
  * @returns {Promise} Paciente creado
  */
 export const createPaciente = async (pacienteData) => {

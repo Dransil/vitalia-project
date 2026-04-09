@@ -28,7 +28,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
   ];
 
   const clinicalDropdownItems = [
-    { id: 'specialty', label: 'Especialidad', icon: BiSolidClinic, path: '/Specialty' },
+    { id: 'specialty', label: 'Especialidad', icon: BiSolidClinic, path: '/specialty' },
     { id: 'consulting-rooms', label: 'Consultorios', icon: MdRoom, path: '/ConsultingRooms' },
   ];
 
