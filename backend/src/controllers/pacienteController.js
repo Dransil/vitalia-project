@@ -13,6 +13,23 @@ exports.obtenerPacientes = async (req, res) => {
     }
 };
 
+// Obtener pacientes por ID
+exports.obtenerPacientePorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const paciente = await Paciente.findByPk(id);
+
+        if (!paciente) {
+            return res.status(404).json({ ok: false, msg: 'Paciente no encontrado' });
+        }
+
+        res.json({ ok: true, data: paciente });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al obtener paciente', error: error.message });
+    }
+};
 // Crear paciente
 exports.crearPaciente = async (req, res) => {
     try {
