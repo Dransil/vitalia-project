@@ -2,6 +2,7 @@ const { Usuario, Especialidad, Consultorio, Horario, UsuarioConsultorioEspeciali
 const bcrypt = require('bcryptjs');
 const sequelize = require('../config/db');
 
+// Obtener usuario
 exports.obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll({
@@ -32,6 +33,42 @@ exports.obtenerUsuarios = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ ok: false, msg: 'Error al obtener usuarios', error: error.message });
+    }
+};
+
+// Obtener usuario por id
+exports.obtenerUsuarioPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const usuario = await Usuario.findByPk(id, {
+            attributes: ['id_usuario', 'nombre', 'apellido', 'email', 'rol', 'estado', 'telefono', 'dias_atencion'],
+            include: [
+                {
+                    model: Horario,
+                    attributes: ['nombre', 'horario_inicio', 'horario_fin']
+                },
+                {
+                    model: UsuarioConsultorioEspecialidad,
+                    as: 'asignaciones',
+                    attributes: ['id', 'estado'],
+                    include: [
+                        { model: Consultorio,  attributes: ['nombre', 'ciudad'] },
+                        { model: Especialidad, attributes: ['nombre'] }
+                    ]
+                }
+            ]
+        });
+
+        if (!usuario) {
+            return res.status(404).json({ ok: false, msg: 'Usuario no encontrado' });
+        }
+
+        res.json({ ok: true, msg: 'Usuario obtenido con éxito', data: usuario });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener usuario', error: error.message });
     }
 };
 
