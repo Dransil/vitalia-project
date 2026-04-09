@@ -69,16 +69,50 @@ exports.crearUsuario = async (req, res) => {
 
 // Actualizar usuario
 exports.actualizarUsuario = async (req, res) => {
+    const t = await sequelize.transaction();
+
     try {
         const { id } = req.params;
-        const [actualizado] = await Usuario.update(req.body, { where: { id_usuario: id } });
+        const { id_consultorio, id_especialidad, ...datos } = req.body;
 
-        if (actualizado) {
-            const usuarioEditado = await Usuario.findByPk(id);
-            return res.json({ ok: true, msg: 'Usuario actualizado', data: usuarioEditado });
+        const [actualizado] = await Usuario.update(datos, {
+            where: { id_usuario: id },
+            transaction: t
+        });
+
+        if (!actualizado) {
+            await t.rollback();
+            return res.status(404).json({ ok: false, msg: 'Usuario no encontrado' });
         }
-        res.status(404).json({ ok: false, msg: 'Usuario no encontrado' });
+
+        if (id_consultorio && id_especialidad) {
+            await UsuarioConsultorioEspecialidad.upsert({
+                id_usuario:      id,
+                id_consultorio:  id_consultorio,
+                id_especialidad: id_especialidad
+            }, { transaction: t });
+        }
+
+        await t.commit();
+
+        const usuarioEditado = await Usuario.findByPk(id, {
+            include: [
+                { model: Horario, attributes: ['nombre', 'horario_inicio', 'horario_fin'] },
+                {
+                    model: UsuarioConsultorioEspecialidad,
+                    as: 'asignaciones',
+                    include: [
+                        { model: Consultorio,  attributes: ['nombre', 'ciudad'] },
+                        { model: Especialidad, attributes: ['nombre'] }
+                    ]
+                }
+            ]
+        });
+
+        res.json({ ok: true, msg: 'Usuario actualizado', data: usuarioEditado });
+
     } catch (error) {
+        await t.rollback();
         res.status(500).json({ ok: false, error: error.message });
     }
 };
