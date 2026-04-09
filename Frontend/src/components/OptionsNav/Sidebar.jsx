@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../Config/ThemeContext';
-import { MdDashboard, MdAddCircle, MdCalendarToday, MdSettings, MdMedicalServices, MdPerson, MdPeople, MdLocalHospital } from 'react-icons/md';
+import { MdDashboard, MdAddCircle, MdCalendarToday, MdSettings, MdMedicalServices, MdPerson, MdPeople, MdLocalHospital, MdSchedule, MdEventNote, MdLocalPharmacy, MdRoom } from 'react-icons/md';
+import { BiSolidClinic } from "react-icons/bi";
 import { useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ activeView, setActiveView, userRole }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScheduleDropdownOpen, setIsScheduleDropdownOpen] = useState(false);
+  const [isClinicalDropdownOpen, setIsClinicalDropdownOpen] = useState(false);
 
   const menuItems = [
     { id: 'new-appointment', label: 'Nueva Cita', icon: MdAddCircle },
@@ -19,10 +22,22 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
     { id: 'patients', label: 'Pacientes', icon: MdPeople, path: '/Patient_Dashboard' },
   ];
 
+  const scheduleDropdownItems = [
+    { id: 'view-schedules', label: 'Ver horarios', icon: MdSchedule, path: '/ViewSchedules' },
+    { id: 'agenda', label: 'Agenda', icon: MdEventNote, path: '/Agenda' },
+  ];
+
+  const clinicalDropdownItems = [
+    { id: 'specialty', label: 'Especialidad', icon: BiSolidClinic, path: '/Specialty' },
+    { id: 'consulting-rooms', label: 'Consultorios', icon: MdRoom, path: '/ConsultingRooms' },
+  ];
+
   const handleNavigation = (path) => {
     navigate(path);
     setActiveView(path);
     setIsDropdownOpen(false);
+    setIsScheduleDropdownOpen(false);
+    setIsClinicalDropdownOpen(false);
   };
 
   const getRoleLabel = (role) => {
@@ -193,6 +208,244 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
             }}
           >
             {dropdownItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigation(item.path)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.spacing.md,
+                    color: theme.colors.neutral[700],
+                    transition: theme.transitions.base,
+                    fontSize: theme.typography.fontSize.sm.size,
+                    fontWeight: theme.typography.fontWeight.medium,
+                    borderBottom: `1px solid ${theme.colors.neutral[100]}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = theme.colors.primary[50];
+                    e.currentTarget.style.color = theme.colors.primary[700];
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = theme.colors.neutral[700];
+                  }}
+                >
+                  <IconComponent size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Sección de Horarios */}
+      <div
+        style={{
+          padding: theme.spacing.lg,
+          borderBottom: `1px solid ${theme.colors.neutral[200]}`,
+          background: theme.colors.neutral[50],
+        }}
+      >
+        {/* Header clickeable para horarios */}
+        <div
+          style={{
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsScheduleDropdownOpen(!isScheduleDropdownOpen)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                background: `linear-gradient(135deg, ${theme.colors.secondary[500]}, ${theme.colors.primary[500]})`,
+                borderRadius: theme.borderRadius.full,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: theme.colors.neutral[0],
+              }}
+            >
+              <MdSchedule size={28} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p
+                style={{
+                  fontSize: theme.typography.fontSize.xs.size,
+                  color: theme.colors.neutral[500],
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: theme.spacing.xs,
+                  margin: 0,
+                }}
+              >
+                Horarios
+              </p>
+              
+              <p
+                style={{
+                  fontSize: theme.typography.fontSize.sm.size,
+                  fontWeight: theme.typography.fontWeight.semibold,
+                  color: theme.colors.neutral[900],
+                  margin: 0,
+                }}
+              >
+                Gestión de tiempos
+              </p>
+            </div>
+            <MdSchedule
+              size={20}
+              style={{
+                transform: isScheduleDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+                color: theme.colors.neutral[600]
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Dropdown menu para horarios */}
+        {isScheduleDropdownOpen && (
+          <div
+            style={{
+              marginTop: theme.spacing.md,
+              background: theme.colors.neutral[0],
+              borderRadius: theme.borderRadius.lg,
+              overflow: 'hidden',
+              animation: 'slideDown 0.3s ease-out',
+              border: `1px solid ${theme.colors.neutral[200]}`,
+              boxShadow: theme.shadows.sm,
+            }}
+          >
+            {scheduleDropdownItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigation(item.path)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.spacing.md,
+                    color: theme.colors.neutral[700],
+                    transition: theme.transitions.base,
+                    fontSize: theme.typography.fontSize.sm.size,
+                    fontWeight: theme.typography.fontWeight.medium,
+                    borderBottom: `1px solid ${theme.colors.neutral[100]}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = theme.colors.secondary[50];
+                    e.currentTarget.style.color = theme.colors.secondary[700];
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = theme.colors.neutral[700];
+                  }}
+                >
+                  <IconComponent size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Nueva sección Clínico */}
+      <div
+        style={{
+          padding: theme.spacing.lg,
+          borderBottom: `1px solid ${theme.colors.neutral[200]}`,
+          background: `linear-gradient(to right, ${theme.colors.primary[50]}, ${theme.colors.secondary[50]})`,
+        }}
+      >
+        {/* Header clickeable para clínico */}
+        <div
+          style={{
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsClinicalDropdownOpen(!isClinicalDropdownOpen)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                background: `linear-gradient(135deg, ${theme.colors.primary[500]}, ${theme.colors.secondary[500]})`,
+                borderRadius: theme.borderRadius.full,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: theme.colors.neutral[0],
+              }}
+            >
+              <MdLocalPharmacy size={28} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p
+                style={{
+                  fontSize: theme.typography.fontSize.xs.size,
+                  color: theme.colors.neutral[500],
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: theme.spacing.xs,
+                  margin: 0,
+                }}
+              >
+                Clínico
+              </p>
+              
+              <p
+                style={{
+                  fontSize: theme.typography.fontSize.sm.size,
+                  fontWeight: theme.typography.fontWeight.semibold,
+                  color: theme.colors.neutral[900],
+                  margin: 0,
+                }}
+              >
+                Gestión clínica
+              </p>
+            </div>
+            <BiSolidClinic
+              size={20}
+              style={{
+                transform: isClinicalDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+                color: theme.colors.neutral[600]
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Dropdown menu para clínico */}
+        {isClinicalDropdownOpen && (
+          <div
+            style={{
+              marginTop: theme.spacing.md,
+              background: theme.colors.neutral[0],
+              borderRadius: theme.borderRadius.lg,
+              overflow: 'hidden',
+              animation: 'slideDown 0.3s ease-out',
+              border: `1px solid ${theme.colors.neutral[200]}`,
+              boxShadow: theme.shadows.sm,
+            }}
+          >
+            {clinicalDropdownItems.map((item) => {
               const IconComponent = item.icon;
               return (
                 <button
