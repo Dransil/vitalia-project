@@ -156,3 +156,30 @@ exports.crearCita = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear cita', error: error.message });
     }
 };
+
+// Actualizar cita
+exports.actualizarCita = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [actualizado] = await Cita.update(req.body, { where: { id_cita: id } });
+
+        if (!actualizado) {
+            return res.status(404).json({ ok: false, msg: 'Cita no encontrada' });
+        }
+
+        const citaActualizada = await Cita.findByPk(id, {
+            include: [
+                { model: Usuario,  as: 'Doctor', attributes: ['nombre', 'apellido'] },
+                { model: Paciente, attributes: ['nombre', 'apellido'] },
+                { model: TipoCita, attributes: ['nombre', 'costo_base'] }
+            ]
+        });
+
+        res.json({ ok: true, msg: 'Cita actualizada con éxito', data: citaActualizada });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al actualizar cita', error: error.message });
+    }
+};

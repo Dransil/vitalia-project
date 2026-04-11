@@ -8,5 +8,6 @@ router.get('/:id', citaController.obtenerCitaPorId);
 router.get('/doctor/:id', citaController.obtenerCitasPorDoctor);
 router.get('/paciente/:id', citaController.obtenerCitasPorPaciente);
 router.post('/', citaController.crearCita);
+router.put('/:id', citaController.actualizarCita);
 
 module.exports = router;
