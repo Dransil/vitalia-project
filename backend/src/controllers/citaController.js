@@ -35,6 +35,42 @@ exports.obtenerCitas = async (req, res) => {
     }
 };
 
+// Obtener cita por ID
+exports.obtenerCitaPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const cita = await Cita.findByPk(id, {
+            include: [
+                {
+                    model: Usuario,
+                    as: 'Doctor',
+                    attributes: ['id_usuario', 'nombre', 'apellido'],
+                    include: [{ model: Horario, attributes: ['nombre'] }]
+                },
+                {
+                    model: Paciente,
+                    attributes: ['id_paciente', 'nombre', 'apellido', 'cedula', 'telefono']
+                },
+                {
+                    model: TipoCita,
+                    attributes: ['nombre', 'duracion_promedio', 'costo_base']
+                }
+            ]
+        });
+
+        if (!cita) {
+            return res.status(404).json({ ok: false, msg: 'Cita no encontrada' });
+        }
+
+        res.json({ ok: true, msg: 'Cita obtenida con éxito', data: cita });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener cita', error: error.message });
+    }
+};
+
 // Crear cita
 exports.crearCita = async (req, res) => {
     try {
