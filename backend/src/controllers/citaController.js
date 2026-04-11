@@ -103,6 +103,39 @@ exports.obtenerCitasPorDoctor = async (req, res) => {
     }
 };
 
+// Obtener citas por paciente
+exports.obtenerCitasPorPaciente = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const citas = await Cita.findAll({
+            where: { id_paciente: id },
+            include: [
+                {
+                    model: Usuario,
+                    as: 'Doctor',
+                    attributes: ['id_usuario', 'nombre', 'apellido']
+                },
+                {
+                    model: TipoCita,
+                    attributes: ['nombre', 'duracion_promedio', 'costo_base']
+                }
+            ],
+            order: [['fecha_hora', 'DESC']]
+        });
+
+        if (citas.length === 0) {
+            return res.status(404).json({ ok: false, msg: 'No se encontraron citas para este paciente' });
+        }
+
+        res.json({ ok: true, msg: 'Citas obtenidas con éxito', data: citas });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener citas', error: error.message });
+    }
+};
+
 // Crear cita
 exports.crearCita = async (req, res) => {
     try {
