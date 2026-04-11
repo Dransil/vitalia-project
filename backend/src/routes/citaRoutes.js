@@ -5,6 +5,8 @@ const citaController = require('../controllers/citaController');
 // Ruta: /vitalia/citas
 router.get('/', citaController.obtenerCitas);
 router.get('/:id', citaController.obtenerCitaPorId);
+router.get('/doctor/:id', citaController.obtenerCitasPorDoctor);
+
 router.post('/', citaController.crearCita);
 
 module.exports = router;
