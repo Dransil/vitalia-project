@@ -183,3 +183,24 @@ exports.actualizarCita = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al actualizar cita', error: error.message });
     }
 };
+
+// Actualizar solo el estado de una cita
+// Los campos disponibles son: programada, confirmada, en_espera, completada, cancelada, no_asistio.
+exports.cambiarEstadoCita = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+
+        const [actualizado] = await Cita.update({ estado }, { where: { id_cita: id } });
+
+        if (!actualizado) {
+            return res.status(404).json({ ok: false, msg: 'Cita no encontrada' });
+        }
+
+        res.json({ ok: true, msg: `Estado actualizado a '${estado}'` });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al actualizar estado', error: error.message });
+    }
+};
