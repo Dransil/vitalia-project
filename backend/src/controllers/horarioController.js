@@ -47,3 +47,41 @@ exports.crearHorario = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear horario', error: error.message });
     }
 };
+
+// Actualizar horario
+exports.actualizarHorario = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [actualizado] = await Horario.update(req.body, { where: { id_horario: id } });
+
+        if (!actualizado) {
+            return res.status(404).json({ ok: false, msg: 'Horario no encontrado' });
+        }
+
+        const horarioActualizado = await Horario.findByPk(id);
+
+        res.json({ ok: true, msg: 'Horario actualizado con éxito', data: horarioActualizado });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al actualizar horario', error: error.message });
+    }
+};
+
+// Eliminar horario
+exports.eliminarHorario = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const eliminado = await Horario.destroy({ where: { id_horario: id } });
+
+        if (!eliminado) {
+            return res.status(404).json({ ok: false, msg: 'Horario no encontrado' });
+        }
+
+        res.json({ ok: true, msg: 'Horario eliminado con éxito' });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al eliminar horario', error: error.message });
+    }
+};
