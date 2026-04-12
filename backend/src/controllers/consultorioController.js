@@ -35,3 +35,15 @@ exports.obtenerConsultorioPorId = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener consultorio', error: error.message });
     }
 };
+
+// Crear consultorio
+exports.crearConsultorio = async (req, res) => {
+    try {
+        const nuevoConsultorio = await Consultorio.create(req.body);
+
+        res.status(201).json({ ok: true, msg: 'Consultorio creado con éxito', data: nuevoConsultorio });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al crear consultorio', error: error.message });
+    }
+};
