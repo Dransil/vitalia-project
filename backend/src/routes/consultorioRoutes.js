@@ -6,5 +6,6 @@ const consultorioController = require('../controllers/consultorioController');
 router.get('/', consultorioController.obtenerConsultorios);
 router.get('/:id', consultorioController.obtenerConsultorioPorId);
 router.post('/', consultorioController.crearConsultorio);
+router.put('/:id', consultorioController.actualizarConsultorio);
 
 module.exports = router;

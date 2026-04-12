@@ -47,3 +47,23 @@ exports.crearConsultorio = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear consultorio', error: error.message });
     }
 };
+
+// Actualizar consultorio
+exports.actualizarConsultorio = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const consultorio = await Consultorio.findByPk(id);
+
+        if (!consultorio) {
+            return res.status(404).json({ ok: false, msg: 'Consultorio no encontrado' });
+        }
+
+        await consultorio.update(req.body);
+
+        res.json({ ok: true, msg: 'Consultorio actualizado con éxito', data: consultorio });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al actualizar consultorio', error: error.message });
+    }
+};
