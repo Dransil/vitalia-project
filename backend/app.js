@@ -10,6 +10,7 @@ const usuarioRoutes = require('./src/routes/usuarioRoutes');
 const PacienteRoutes = require('./src/routes/pacienteRoutes');
 const tipocitaRoutes = require('./src/routes/tipocitaRoutes');
 const citaRoutes = require('./src/routes/citaRoutes')
+const horarioRoutes = require('./src/routes/horarioRoutes')
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -27,6 +28,7 @@ app.use('/vitalia/usuarios', usuarioRoutes);
 app.use('/vitalia/pacientes', PacienteRoutes);
 app.use('/vitalia/tipocita', tipocitaRoutes);
 app.use('/vitalia/citas', citaRoutes);
+app.use('/vitalia/horarios', horarioRoutes);
 
 app.use('/vitalia/auth', authRoutes);
 
