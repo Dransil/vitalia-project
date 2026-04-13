@@ -1,18 +1,11 @@
-// Servicio para gestión de especialidades
 import api from './Api';
 
-/**
- * Obtener lista de todas las especialidades
- * GET /vitalia/especialidades
- * @returns {Promise} Lista de especialidades
- */
 export const getEspecialidades = async () => {
   try {
     const response = await api.get('/especialidades');
     
-    console.log('🔍 Respuesta del backend:', response);
+    console.log('Respuesta del backend:', response);
     
-    // El backend retorna: { ok: true, msg: '...', data: [...] }
     let especialidadesArray = [];
     
     if (response.data && Array.isArray(response.data)) {
@@ -21,7 +14,7 @@ export const getEspecialidades = async () => {
       especialidadesArray = response;
     }
 
-    console.log('✅ Especialidades procesadas:', especialidadesArray);
+    console.log('Especialidades procesadas:', especialidadesArray);
     
     return {
       ok: response.ok !== false,
@@ -29,7 +22,7 @@ export const getEspecialidades = async () => {
       data: especialidadesArray || [],
     };
   } catch (error) {
-    console.error('❌ Error al obtener especialidades:', error);
+    console.error('Error al obtener especialidades:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al cargar las especialidades',
@@ -39,16 +32,11 @@ export const getEspecialidades = async () => {
   }
 };
 
-/**
- * Buscar/filtrar especialidades localmente
- * @param {string} searchName - Buscar por nombre
- * @returns {Promise} Lista de especialidades filtradas
- */
+
 export const searchEspecialidades = async (searchName = '') => {
   try {
     const response = await api.get('/especialidades');
     
-    // Obtener el array de especialidades
     let especialidadesArray = [];
     if (response.data && Array.isArray(response.data)) {
       especialidadesArray = response.data;
@@ -58,13 +46,11 @@ export const searchEspecialidades = async (searchName = '') => {
       return { ok: false, msg: 'Formato de datos inválido', data: [] };
     }
 
-    // Validar que especialidadesArray sea un array
     if (!Array.isArray(especialidadesArray)) {
       console.warn('especialidadesArray no es un array:', especialidadesArray);
       return { ok: false, msg: 'Formato de datos inválido', data: [] };
     }
 
-    // Filtrar en el frontend
     let especialidadesFiltradas = especialidadesArray;
 
     if (searchName) {
@@ -90,44 +76,30 @@ export const searchEspecialidades = async (searchName = '') => {
   }
 };
 
-/**
- * Obtener una especialidad específica
- * @param {number} id - ID de la especialidad
- * @returns {Promise} Datos de la especialidad
- */
+
 export const getEspecialidadById = async (id) => {
   try {
-    const response = await api.get('/especialidades');
+    const response = await api.get(`/especialidades/${id}`);
     
-    let especialidadesArray = [];
-    if (response.data && Array.isArray(response.data)) {
-      especialidadesArray = response.data;
-    } else if (Array.isArray(response)) {
-      especialidadesArray = response;
+    if (response.data) {
+      return { ok: true, data: response.data };
     }
 
-    const especialidad = especialidadesArray.find(e => e.id_especialidad === id || e.id === id);
-    
-    if (!especialidad) {
-      return { ok: false, msg: 'Especialidad no encontrada', data: null };
-    }
-
-    return { ok: true, data: especialidad };
+    return { ok: false, msg: 'Especialidad no encontrada', data: null };
   } catch (error) {
     console.error('Error al obtener especialidad:', error);
     return { ok: false, msg: 'Error al cargar la especialidad', error: error.message, data: null };
   }
 };
 
-/**
- * Crear nueva especialidad
- * POST /vitalia/especialidades
- * @param {object} especialidadData - Datos de la especialidad
- * @returns {Promise} Especialidad creada
- */
+
 export const createEspecialidad = async (especialidadData) => {
   try {
+    console.log('📤 Enviando especialidad:', especialidadData);
     const response = await api.post('/especialidades', especialidadData);
+    
+    console.log('✅ Respuesta:', response);
+    
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Especialidad creada exitosamente',
@@ -144,13 +116,7 @@ export const createEspecialidad = async (especialidadData) => {
   }
 };
 
-/**
- * Actualizar especialidad
- * PUT /vitalia/especialidades/:id
- * @param {number} id - ID de la especialidad
- * @param {object} especialidadData - Datos a actualizar
- * @returns {Promise} Especialidad actualizada
- */
+
 export const updateEspecialidad = async (id, especialidadData) => {
   try {
     const response = await api.put(`/especialidades/${id}`, especialidadData);
@@ -170,12 +136,6 @@ export const updateEspecialidad = async (id, especialidadData) => {
   }
 };
 
-/**
- * Cambiar estado de la especialidad (activa/inactiva)
- * PATCH /vitalia/especialidades/estado/:id
- * @param {number} id - ID de la especialidad
- * @returns {Promise} Resultado de cambio de estado
- */
 export const cambiarEstadoEspecialidad = async (id) => {
   try {
     const response = await api.patch(`/especialidades/estado/${id}`);
@@ -194,11 +154,6 @@ export const cambiarEstadoEspecialidad = async (id) => {
   }
 };
 
-/**
- * Eliminar especialidad (usa cambiar estado - soft delete)
- * @param {number} id - ID de la especialidad
- * @returns {Promise} Resultado de la eliminación
- */
 export const deleteEspecialidad = async (id) => {
   try {
     const response = await api.delete(`/especialidades/${id}`);

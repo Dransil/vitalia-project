@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../Config/ThemeContext';
+import { useTheme } from '../../../../Config/ThemeContext';
 import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCheckCircle } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import * as especialidadesService from '../../Services/Especialidadesservice';
+import * as especialidadesService from '../../../../Services/Especialidadesservice';
 
-const Especialidades_Dashboard = () => {
+const Specialty_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
   const navigate = useNavigate();
 
@@ -589,4 +589,4 @@ const Especialidades_Dashboard = () => {
   );
 };
 
-export default Especialidades_Dashboard;
+export default Specialty_Dashboard;

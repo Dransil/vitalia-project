@@ -1,12 +1,6 @@
-// Servicio para gestión de pacientes - VERSIÓN COMPLETA
-// Con todos los campos de la tabla paciente
 import api from './Api';
 
-/**
- * Obtener lista de todos los pacientes
- * GET /vitalia/pacientes
- * @returns {Promise} Lista de pacientes
- */
+
 export const getPacientes = async () => {
   try {
     const response = await api.get('/pacientes');
@@ -39,13 +33,6 @@ export const getPacientes = async () => {
   }
 };
 
-/**
- * Buscar/filtrar pacientes localmente
- * @param {string} searchName - Buscar por nombre o apellido
- * @param {string} searchEmail - Buscar por email
- * @param {string} searchPhone - Buscar por teléfono
- * @returns {Promise} Lista de pacientes filtrados
- */
 export const searchPacientes = async (searchName = '', searchEmail = '', searchPhone = '') => {
   try {
     const response = await api.get('/pacientes');
@@ -101,11 +88,6 @@ export const searchPacientes = async (searchName = '', searchEmail = '', searchP
   }
 };
 
-/**
- * Obtener un paciente específico
- * @param {number} id - ID del paciente
- * @returns {Promise} Datos del paciente
- */
 export const getPacienteById = async (id) => {
   try {
     const response = await api.get(`/pacientes/${id}`);
@@ -121,22 +103,21 @@ export const getPacienteById = async (id) => {
   }
 };
 
-/**
- * Crear nuevo paciente
- * POST /vitalia/pacientes
- * @param {object} pacienteData - Datos del paciente con TODOS los campos
- * @returns {Promise} Paciente creado
- */
+
 export const createPaciente = async (pacienteData) => {
   try {
+    console.log('📤 Enviando datos al backend:', pacienteData);
     const response = await api.post('/pacientes', pacienteData);
+    
+    console.log('✅ Respuesta del backend:', response);
+    
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Paciente creado exitosamente',
       data: response.data,
     };
   } catch (error) {
-    console.error('Error al crear paciente:', error);
+    console.error('❌ Error al crear paciente:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al crear el paciente',
@@ -146,13 +127,7 @@ export const createPaciente = async (pacienteData) => {
   }
 };
 
-/**
- * Actualizar paciente
- * PUT /vitalia/pacientes/:id
- * @param {number} id - ID del paciente
- * @param {object} pacienteData - Datos a actualizar
- * @returns {Promise} Paciente actualizado
- */
+
 export const updatePaciente = async (id, pacienteData) => {
   try {
     const response = await api.put(`/pacientes/${id}`, pacienteData);
@@ -172,12 +147,7 @@ export const updatePaciente = async (id, pacienteData) => {
   }
 };
 
-/**
- * Cambiar estado del paciente (activo/inactivo)
- * PATCH /vitalia/pacientes/estado/:id
- * @param {number} id - ID del paciente
- * @returns {Promise} Resultado de cambio de estado
- */
+
 export const cambiarEstadoPaciente = async (id) => {
   try {
     const response = await api.patch(`/pacientes/estado/${id}`);
@@ -196,11 +166,7 @@ export const cambiarEstadoPaciente = async (id) => {
   }
 };
 
-/**
- * Eliminar paciente (usa cambiar estado - soft delete)
- * @param {number} id - ID del paciente
- * @returns {Promise} Resultado de la eliminación
- */
+
 export const deletePaciente = async (id) => {
   try {
     const response = await api.delete(`/pacientes/${id}`);

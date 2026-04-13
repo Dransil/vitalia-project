@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
-import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail } from 'react-icons/md';
+import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail, MdCake } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import * as pacientesService from '../../../Services/Pacienteservice';
 
-const DashboardPct = () => {
+const Pacientes_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
   const navigate = useNavigate();
 
@@ -31,7 +31,6 @@ const DashboardPct = () => {
     const result = await pacientesService.getPacientes();
     
     if (result.ok) {
-      // Validar que sea un array
       const datosValidos = Array.isArray(result.data) ? result.data : [];
       console.log('✅ Pacientes cargados:', datosValidos);
       setPacientes(datosValidos);
@@ -47,7 +46,6 @@ const DashboardPct = () => {
 
   // Función para manejar búsqueda y filtros
   const handleSearch = async () => {
-    // Si todos los filtros están vacíos, cargar todos
     if (!searchName && !searchEmail && !searchPhone) {
       loadPacientes();
       return;
@@ -118,9 +116,26 @@ const DashboardPct = () => {
       fecha_nacimiento: paciente.fecha_nacimiento || 'No especificado',
       genero: paciente.genero || 'No especificado',
       direccion: paciente.direccion || 'No especificada',
+      ciudad: paciente.ciudad || 'No especificada',
+      grupo_sanguineo: paciente.grupo_sanguineo || 'No especificado',
+      alergias: paciente.alergias || 'Sin alergias registradas',
+      condiciones_medicas: paciente.condiciones_medicas || 'Sin condiciones',
       registrado_por: paciente.registrado_por || null,
       fecha_creacion: paciente.fecha_creacion || null,
     };
+  };
+
+  // Función para calcular edad
+  const calcularEdad = (fechaNacimiento) => {
+    if (!fechaNacimiento || fechaNacimiento === 'No especificado') return 'N/A';
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    return edad;
   };
 
   return (
@@ -139,7 +154,7 @@ const DashboardPct = () => {
           Registro de Pacientes
         </h1>
         <p style={{ color: colors.neutral[600], margin: 0 }}>
-          Gestiona todos los pacientes del consultorio
+          Gestiona todos los pacientes del consultorio. Total: {pacientes.length} pacientes
         </p>
       </div>
 
@@ -509,6 +524,8 @@ const DashboardPct = () => {
                 const sanitized = sanitizePaciente(paciente);
                 if (!sanitized) return null;
 
+                const edad = calcularEdad(sanitized.fecha_nacimiento);
+
                 return (
                   <div
                     key={sanitized.id}
@@ -551,8 +568,9 @@ const DashboardPct = () => {
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
+                          gridTemplateColumns: '1fr 1fr 1fr',
                           gap: spacing.md,
+                          marginBottom: spacing.sm,
                         }}
                       >
                         {/* Email */}
@@ -592,14 +610,33 @@ const DashboardPct = () => {
                             {sanitized.telefono}
                           </span>
                         </div>
+
+                        {/* Edad */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: spacing.sm,
+                          }}
+                        >
+                          <MdCake size={16} style={{ color: colors.neutral[500] }} />
+                          <span
+                            style={{
+                              fontSize: typography.fontSize.xs.size,
+                              color: colors.neutral[600],
+                            }}
+                          >
+                            {edad} años
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Cédula y Estado */}
+                      {/* Cédula, Grupo Sanguíneo y Estado */}
                       <div
                         style={{
                           display: 'flex',
                           gap: spacing.md,
-                          marginTop: spacing.md,
+                          flexWrap: 'wrap',
                         }}
                       >
                         <span
@@ -614,6 +651,22 @@ const DashboardPct = () => {
                         >
                           Cédula: {sanitized.cedula}
                         </span>
+                        
+                        {sanitized.grupo_sanguineo !== 'No especificado' && (
+                          <span
+                            style={{
+                              fontSize: typography.fontSize.xs.size,
+                              padding: `${spacing.sm/2} ${spacing.sm}`,
+                              background: colors.error.light,
+                              color: colors.error.dark,
+                              borderRadius: borderRadius.sm,
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {sanitized.grupo_sanguineo}
+                          </span>
+                        )}
+
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
@@ -721,10 +774,29 @@ const DashboardPct = () => {
                   margin: 0,
                   textAlign: 'center',
                   maxWidth: '300px',
+                  marginBottom: spacing.lg,
                 }}
               >
                 No hay pacientes registrados. Crea uno para comenzar.
               </p>
+
+              <button
+                onClick={handleCreatePaciente}
+                style={{
+                  padding: `${spacing.md} ${spacing.lg}`,
+                  background: config.theme.colors.primary,
+                  color: colors.neutral[0],
+                  border: 'none',
+                  borderRadius: borderRadius.md,
+                  fontWeight: typography.fontWeight.semibold,
+                  cursor: 'pointer',
+                  transition: '0.3s',
+                }}
+                onMouseEnter={e => e.target.style.opacity = '0.9'}
+                onMouseLeave={e => e.target.style.opacity = '1'}
+              >
+                Crear Primer Paciente
+              </button>
             </div>
           )}
         </div>
@@ -744,4 +816,4 @@ const DashboardPct = () => {
   );
 };
 
-export default DashboardPct;
+export default Pacientes_Dashboard;
