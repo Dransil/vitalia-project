@@ -51,3 +51,26 @@ exports.crearEspecialidad = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear especialidad', error: error.message });
     }
 };
+
+// Actualizar especialidad
+exports.actualizarEspecialidad = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const especialidad = await Especialidad.findByPk(id);
+
+        if (!especialidad) {
+            return res.status(404).json({ ok: false, msg: 'Especialidad no encontrada' });
+        }
+
+        await especialidad.update(req.body);
+
+        res.json({ ok: true, msg: 'Especialidad actualizada con éxito', data: especialidad });
+
+    } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ ok: false, msg: 'Ya existe una especialidad con ese nombre' });
+        }
+        res.status(500).json({ ok: false, msg: 'Error al actualizar especialidad', error: error.message });
+    }
+};

@@ -6,5 +6,6 @@ const especialidadController = require('../controllers/especialidadController');
 router.get('/', especialidadController.obtenerEspecialidades);
 router.get('/:id', especialidadController.obtenerEspecialidadPorId);
 router.post('/', especialidadController.crearEspecialidad);
+router.put('/:id', especialidadController.actualizarEspecialidad);
 
 module.exports = router;
