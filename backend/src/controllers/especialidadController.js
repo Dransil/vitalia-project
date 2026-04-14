@@ -35,3 +35,19 @@ exports.obtenerEspecialidadPorId = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener especialidad', error: error.message });
     }
 };
+
+// Crear especialidad
+exports.crearEspecialidad = async (req, res) => {
+    try {
+        const nuevaEspecialidad = await Especialidad.create(req.body);
+
+        res.status(201).json({ ok: true, msg: 'Especialidad creada con éxito', data: nuevaEspecialidad });
+
+    } catch (error) {
+        // El nombre tiene UNIQUE KEY, si se duplica Sequelize lanza un error específico
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ ok: false, msg: 'Ya existe una especialidad con ese nombre' });
+        }
+        res.status(500).json({ ok: false, msg: 'Error al crear especialidad', error: error.message });
+    }
+};
