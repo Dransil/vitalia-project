@@ -7,5 +7,6 @@ router.get('/', consultorioController.obtenerConsultorios);
 router.get('/:id', consultorioController.obtenerConsultorioPorId);
 router.post('/', consultorioController.crearConsultorio);
 router.put('/:id', consultorioController.actualizarConsultorio);
+router.patch('/:id', consultorioController.cambiarEstadoConsultorio);
 
 module.exports = router;
