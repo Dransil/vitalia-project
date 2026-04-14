@@ -92,3 +92,21 @@ exports.cambiarEstadoConsultorio = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al cambiar estado', error: error.message });
     }
 };
+
+// Eliminar consultorio
+exports.eliminarConsultorio = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const eliminado = await Consultorio.destroy({ where: { id_consultorio: id } });
+
+        if (!eliminado) {
+            return res.status(404).json({ ok: false, msg: 'Consultorio no encontrado' });
+        }
+
+        res.json({ ok: true, msg: 'Consultorio eliminado con éxito' });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al eliminar consultorio', error: error.message });
+    }
+};
