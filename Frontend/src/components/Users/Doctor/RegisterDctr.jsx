@@ -1,41 +1,117 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
-import { MdUploadFile, MdDelete, MdSave, MdArrowBack, MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { 
+  MdArrowBack, MdArrowForward, MdCheck, MdPerson, 
+  MdWork, MdSchedule, MdSecurity, MdErrorOutline,
+  MdVisibility, MdVisibilityOff, MdClose, MdAccessTime
+} from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../Services/Api';
 
-const RegisterDct = ({ onBack }) => {
+const RegisterDct = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
+  const navigate = useNavigate();
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Datos desde la BD
+  const [horarios, setHorarios] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [consultorios, setConsultorios] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
   const [formData, setFormData] = useState({
+    // Informacion Personal
     nombre: '',
     apellido: '',
     email: '',
     cedula: '',
     telefono: '',
-    especialidad: '',
-    consultorio: '',
-    usuario: '',
+    // Informacion Profesional
+    id_especialidad: '',
+    id_consultorio: '',
+    // Horario (predefinido)
+    id_horario: '',
+    // Credenciales
     contraseña: '',
     confirmarContraseña: '',
+    // Dias de atencion
+    dias_atencion: []
   });
-  const [foto, setFoto] = useState(null);
-  const [fotoPreview, setFotoPreview] = useState(null);
-  const [permisos, setPermisos] = useState({
-    crearCitas: false,
-    editarCitas: false,
-    cancelarCitas: false,
-    verHistorial: false,
-    editarHistorial: false,
-    crearPacientes: false,
-    editarPacientes: false,
-    verReportes: false,
-    gestionarUsuarios: false,
+
+  const [passwordValidation, setPasswordValidation] = useState({
+    mayuscula: false,
+    minuscula: false,
+    numero: false,
+    caracterEspecial: false,
+    minimo8: false,
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+
+  const diasSemana = [
+    { id: 'Lun', nombre: 'Lunes' },
+    { id: 'Mar', nombre: 'Martes' },
+    { id: 'Mie', nombre: 'Miércoles' },
+    { id: 'Jue', nombre: 'Jueves' },
+    { id: 'Vie', nombre: 'Viernes' },
+    { id: 'Sab', nombre: 'Sábado' },
+    { id: 'Dom', nombre: 'Domingo' }
+  ];
+
+  const pasos = [
+    { titulo: 'Informacion Personal', icono: MdPerson },
+    { titulo: 'Informacion Profesional', icono: MdWork },
+    { titulo: 'Horario de Atencion', icono: MdSchedule },
+    { titulo: 'Credenciales de Acceso', icono: MdSecurity }
+  ];
+
+  // Cargar datos desde la BD
+  useEffect(() => {
+    const loadCatalogos = async () => {
+      setLoadingData(true);
+      try {
+        // Cargar horarios predefinidos
+        const horariosResponse = await api.get('/horarios', true);
+        if (horariosResponse.ok) {
+          setHorarios(horariosResponse.data || []);
+        }
+
+        // Cargar especialidades
+        const especialidadesResponse = await api.get('/especialidades', true);
+        if (especialidadesResponse.ok) {
+          setEspecialidades(especialidadesResponse.data || []);
+        }
+
+        // Cargar consultorios
+        const consultoriosResponse = await api.get('/consultorios', true);
+        if (consultoriosResponse.ok) {
+          setConsultorios(consultoriosResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Error cargando catalogos:', error);
+        setError('Error al cargar los datos necesarios');
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadCatalogos();
+  }, []);
+
+  const validatePassword = (password) => {
+    const validation = {
+      mayuscula: /[A-Z]/.test(password),
+      minuscula: /[a-z]/.test(password),
+      numero: /[0-9]/.test(password),
+      caracterEspecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      minimo8: password.length >= 8,
+    };
+    return validation;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,102 +119,191 @@ const RegisterDct = ({ onBack }) => {
       ...prev,
       [name]: value,
     }));
-  };
 
-  const handleFotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFotoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (name === 'contraseña') {
+      setPasswordValidation(validatePassword(value));
     }
   };
 
-  const handleDeleteFoto = () => {
-    setFoto(null);
-    setFotoPreview(null);
+  const handleDiaToggle = (diaId) => {
+    setFormData(prev => {
+      const nuevosDias = prev.dias_atencion.includes(diaId)
+        ? prev.dias_atencion.filter(d => d !== diaId)
+        : [...prev.dias_atencion, diaId];
+      return { ...prev, dias_atencion: nuevosDias };
+    });
   };
 
-  const handlePermissionChange = (permission) => {
-    setPermisos(prev => ({
-      ...prev,
-      [permission]: !prev[permission],
-    }));
+  const validarPasoActual = () => {
+    if (currentStep === 0) {
+      if (!formData.nombre || !formData.apellido || !formData.email || 
+          !formData.cedula || !formData.telefono) {
+        setError('Todos los campos de informacion personal son requeridos');
+        return false;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        setError('Email no valido');
+        return false;
+      }
+      if (!/^[0-9\-\+\(\)\s]{7,}$/.test(formData.telefono)) {
+        setError('Telefono no valido');
+        return false;
+      }
+    }
+    
+    if (currentStep === 1) {
+      if (!formData.id_especialidad || !formData.id_consultorio) {
+        setError('Especialidad y consultorio son requeridos');
+        return false;
+      }
+    }
+    
+    if (currentStep === 2) {
+      if (!formData.id_horario) {
+        setError('Seleccione un horario de atencion');
+        return false;
+      }
+      if (formData.dias_atencion.length === 0) {
+        setError('Seleccione al menos un dia de atencion');
+        return false;
+      }
+    }
+    
+    if (currentStep === 3) {
+      if (!formData.contraseña || !formData.confirmarContraseña) {
+        setError('La contraseña es requerida');
+        return false;
+      }
+      if (!passwordValidation.mayuscula || !passwordValidation.minuscula || 
+          !passwordValidation.numero || !passwordValidation.caracterEspecial || 
+          !passwordValidation.minimo8) {
+        setError('La contraseña no cumple con los requisitos');
+        return false;
+      }
+      if (formData.contraseña !== formData.confirmarContraseña) {
+        setError('Las contraseñas no coinciden');
+        return false;
+      }
+    }
+    
+    setError('');
+    return true;
+  };
+
+  const siguientePaso = () => {
+    if (validarPasoActual() && currentStep < pasos.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const pasoAnterior = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      setError('');
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/Doctor_Dashboard');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validarPasoActual()) {
+      return;
+    }
+    
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
-      // Validaciones
-      if (!formData.nombre || !formData.apellido || !formData.email || !formData.cedula) {
-        setError('Por favor completa los campos requeridos');
-        setLoading(false);
-        return;
-      }
-
-      if (formData.contraseña !== formData.confirmarContraseña) {
-        setError('Las contraseñas no coinciden');
-        setLoading(false);
-        return;
-      }
-
-      if (formData.contraseña.length < 6) {
-        setError('La contraseña debe tener al menos 6 caracteres');
-        setLoading(false);
-        return;
-      }
-
-      // Preparar datos para enviar - Solo campos básicos de usuario
       const dataToSend = {
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        email: formData.email,
-        cedula: formData.cedula,
-        telefono: formData.telefono,
-        id_especialidad: 1, // Hardcodeado por ahora
-        id_consultorio: 1, // Hardcodeado por ahora
+        nombre: formData.nombre.trim(),
+        apellido: formData.apellido.trim(),
+        email: formData.email.trim(),
+        cedula: formData.cedula.trim(),
+        telefono: formData.telefono.trim(),
         contraseña_hash: formData.contraseña,
-        rol: 'dentista',
+        id_especialidad: parseInt(formData.id_especialidad),
+        id_consultorio: parseInt(formData.id_consultorio),
+        id_horario: parseInt(formData.id_horario),
+        dias_atencion: formData.dias_atencion.join(','),
+        rol: 'doctor',
         estado: 'activo',
       };
 
-      // Realizar petición POST
       const response = await api.post('/usuarios', dataToSend, true);
 
       if (response.ok) {
-        setSuccess('Usuario creado exitosamente');
+        setSuccess('Doctor creado exitosamente');
         setTimeout(() => {
-          onBack?.();
+          navigate('/Doctor_Dashboard');
         }, 1500);
       } else {
-        setError(response.msg || 'Error al crear el usuario');
+        setError(response.msg || 'Error al crear el doctor');
       }
     } catch (err) {
       console.error('Error:', err);
-      setError(err.message || 'Error al crear el usuario');
+      setError(err.message || 'Error al crear el doctor');
     } finally {
       setLoading(false);
     }
   };
 
-  const permisosDisponibles = [
-    { key: 'crearCitas', label: 'Crear Citas' },
-    { key: 'editarCitas', label: 'Editar Citas' },
-    { key: 'cancelarCitas', label: 'Cancelar Citas' },
-    { key: 'verHistorial', label: 'Ver Historial' },
-    { key: 'editarHistorial', label: 'Editar Historial' },
-    { key: 'crearPacientes', label: 'Crear Pacientes' },
-    { key: 'editarPacientes', label: 'Editar Pacientes' },
-    { key: 'verReportes', label: 'Ver Reportes' },
-    { key: 'gestionarUsuarios', label: 'Gestionar Usuarios' },
-  ];
+  const progressPercentage = ((currentStep + 1) / pasos.length) * 100;
+  const CurrentIcon = pasos[currentStep].icono;
+
+  const isFormValid = () => {
+    return formData.nombre && formData.apellido && formData.email && 
+           formData.cedula && formData.telefono && formData.id_especialidad && 
+           formData.id_consultorio && formData.id_horario &&
+           formData.dias_atencion.length > 0 && formData.contraseña && 
+           formData.contraseña === formData.confirmarContraseña &&
+           passwordValidation.mayuscula && passwordValidation.minuscula &&
+           passwordValidation.numero && passwordValidation.caracterEspecial &&
+           passwordValidation.minimo8;
+  };
+
+  // Obtener informacion del horario seleccionado
+  const horarioSeleccionado = horarios.find(h => h.id_horario === parseInt(formData.id_horario));
+
+  if (loadingData) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: colors.neutral[50],
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: `4px solid ${colors.neutral[200]}`,
+            borderTop: `4px solid ${config.theme.colors.primary}`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto',
+          }} />
+          <p style={{ marginTop: spacing.lg, color: colors.neutral[600] }}>
+            Cargando datos...
+          </p>
+        </div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -176,7 +341,7 @@ const RegisterDct = ({ onBack }) => {
           }}
         >
           <button
-            onClick={onBack}
+            onClick={handleBack}
             style={{
               background: 'transparent',
               border: 'none',
@@ -198,7 +363,7 @@ const RegisterDct = ({ onBack }) => {
               margin: 0,
             }}
           >
-            Crear Nuevo Usuario
+            Crear Nuevo Doctor
           </h1>
         </div>
       </div>
@@ -211,7 +376,7 @@ const RegisterDct = ({ onBack }) => {
           padding: spacing.xl,
         }}
       >
-        {/* Mensajes de Error/Éxito */}
+        {/* Mensajes de Error/Exito */}
         {error && (
           <div
             style={{
@@ -223,11 +388,16 @@ const RegisterDct = ({ onBack }) => {
               borderRadius: borderRadius.lg,
               fontWeight: typography.fontWeight.semibold,
               fontSize: typography.fontSize.sm.size,
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.md,
             }}
           >
+            <MdErrorOutline size={20} />
             {error}
           </div>
         )}
+        
         {success && (
           <div
             style={{
@@ -239,681 +409,894 @@ const RegisterDct = ({ onBack }) => {
               borderRadius: borderRadius.lg,
               fontWeight: typography.fontWeight.semibold,
               fontSize: typography.fontSize.sm.size,
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.md,
             }}
           >
+            <MdCheck size={20} />
             {success}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {/* Progress Bar */}
+        <div
+          style={{
+            background: colors.neutral[0],
+            border: `1px solid ${colors.neutral[200]}`,
+            borderRadius: borderRadius.xl,
+            padding: spacing.lg,
+            marginBottom: spacing.lg,
+            boxShadow: shadows.sm,
+          }}
+        >
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '300px 1fr',
-              gap: spacing.xl,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: spacing.md,
             }}
           >
-            {/* Columna Izquierda - Foto y Permisos */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: spacing.lg,
+                alignItems: 'center',
+                gap: spacing.sm,
+                fontSize: typography.fontSize.sm.size,
+                fontWeight: typography.fontWeight.semibold,
+                color: colors.neutral[700],
               }}
             >
-              {/* Sección Foto - OCULTA POR AHORA */}
-              {/* 
-              <div
-                style={{
-                  background: colors.neutral[0],
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.xl,
-                  padding: spacing.lg,
-                  boxShadow: shadows.md,
-                }}
-              >
+              <CurrentIcon size={20} style={{ color: config.theme.colors.primary }} />
+              Paso {currentStep + 1} de {pasos.length}
+            </div>
+            <div
+              style={{
+                fontSize: typography.fontSize.sm.size,
+                fontWeight: typography.fontWeight.medium,
+                color: colors.neutral[600],
+              }}
+            >
+              {pasos[currentStep].titulo}
+            </div>
+          </div>
+          
+          <div
+            style={{
+              height: '8px',
+              background: colors.neutral[200],
+              borderRadius: borderRadius.full,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${progressPercentage}%`,
+                height: '100%',
+                background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
+                borderRadius: borderRadius.full,
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div
+            style={{
+              background: colors.neutral[0],
+              border: `1px solid ${colors.neutral[200]}`,
+              borderRadius: borderRadius.xl,
+              padding: spacing.xl,
+              boxShadow: shadows.md,
+            }}
+          >
+            {/* Paso 1: Informacion Personal */}
+            {currentStep === 0 && (
+              <div>
                 <h3
                   style={{
                     fontSize: typography.fontSize.lg.size,
                     fontWeight: typography.fontWeight.bold,
                     color: colors.neutral[900],
                     margin: 0,
-                    marginBottom: spacing.md,
+                    marginBottom: spacing.lg,
+                    paddingBottom: spacing.md,
+                    borderBottom: `2px solid ${colors.neutral[200]}`,
                   }}
                 >
-                  Foto de Perfil
-                </h3>
-
-                {fotoPreview ? (
-                  <div>
-                    <img
-                      src={fotoPreview}
-                      alt="Preview"
-                      style={{
-                        width: '100%',
-                        borderRadius: borderRadius.lg,
-                        marginBottom: spacing.md,
-                        maxHeight: '200px',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleDeleteFoto}
-                      style={{
-                        width: '100%',
-                        padding: spacing.md,
-                        background: colors.error.light,
-                        color: colors.error.main,
-                        border: `2px solid ${colors.error.main}`,
-                        borderRadius: borderRadius.md,
-                        fontWeight: typography.fontWeight.semibold,
-                        cursor: 'pointer',
-                        transition: '0.3s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: spacing.sm,
-                      }}
-                      onMouseEnter={e => e.target.style.background = colors.error.main + '20'}
-                      onMouseLeave={e => e.target.style.background = colors.error.light}
-                    >
-                      <MdDelete size={18} />
-                      Eliminar Foto
-                    </button>
-                  </div>
-                ) : (
-                  <label
-                    style={{
-                      display: 'block',
-                      padding: spacing.lg,
-                      border: `2px dashed ${colors.neutral[300]}`,
-                      borderRadius: borderRadius.lg,
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: '0.3s',
-                      background: colors.neutral[50],
-                    }}
-                  >
-                    <MdUploadFile
-                      size={32}
-                      style={{
-                        color: colors.neutral[400],
-                        marginBottom: spacing.sm,
-                      }}
-                    />
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: typography.fontSize.sm.size,
-                        color: colors.neutral[600],
-                        fontWeight: typography.fontWeight.semibold,
-                      }}
-                    >
-                      Haz clic para subir
-                    </p>
-                    <input
-                      type="file"
-                      onChange={handleFotoChange}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                )}
-              </div>
-              */}
-
-              {/* Sección Permisos - OCULTA POR AHORA */}
-              {/*
-              <div
-                style={{
-                  background: colors.neutral[0],
-                  border: `1px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.xl,
-                  padding: spacing.lg,
-                  boxShadow: shadows.md,
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: typography.fontSize.lg.size,
-                    fontWeight: typography.fontWeight.bold,
-                    color: colors.neutral[900],
-                    margin: 0,
-                    marginBottom: spacing.md,
-                  }}
-                >
-                  Permisos
+                  Informacion Personal
                 </h3>
 
                 <div
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.md,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: spacing.lg,
                   }}
                 >
-                  {permisosDisponibles.map(permiso => (
+                  <div>
                     <label
-                      key={permiso.key}
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        outline: 'none',
+                        transition: '0.3s',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                      placeholder="Nombre del doctor"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      value={formData.apellido}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                      placeholder="Apellido del doctor"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                      placeholder="doctor@email.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Cedula *
+                    </label>
+                    <input
+                      type="text"
+                      name="cedula"
+                      value={formData.cedula}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                      placeholder="12345678"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Telefono *
+                    </label>
+                    <input
+                      type="tel"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                      placeholder="0999999999"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Paso 2: Informacion Profesional */}
+            {currentStep === 1 && (
+              <div>
+                <h3
+                  style={{
+                    fontSize: typography.fontSize.lg.size,
+                    fontWeight: typography.fontWeight.bold,
+                    color: colors.neutral[900],
+                    margin: 0,
+                    marginBottom: spacing.lg,
+                    paddingBottom: spacing.md,
+                    borderBottom: `2px solid ${colors.neutral[200]}`,
+                  }}
+                >
+                  Informacion Profesional
+                </h3>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: spacing.lg,
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Especialidad *
+                    </label>
+                    <select
+                      name="id_especialidad"
+                      value={formData.id_especialidad}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        background: colors.neutral[0],
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                    >
+                      <option value="">Selecciona una especialidad</option>
+                      {especialidades.map(esp => (
+                        <option key={esp.id_especialidad} value={esp.id_especialidad}>
+                          {esp.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Consultorio *
+                    </label>
+                    <select
+                      name="id_consultorio"
+                      value={formData.id_consultorio}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: spacing.md,
+                        border: `2px solid ${colors.neutral[200]}`,
+                        borderRadius: borderRadius.md,
+                        fontSize: typography.fontSize.sm.size,
+                        background: colors.neutral[0],
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                    >
+                      <option value="">Selecciona un consultorio</option>
+                      {consultorios.map(cons => (
+                        <option key={cons.id_consultorio} value={cons.id_consultorio}>
+                          {cons.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Paso 3: Horario de Atencion */}
+            {currentStep === 2 && (
+              <div>
+                <h3
+                  style={{
+                    fontSize: typography.fontSize.lg.size,
+                    fontWeight: typography.fontWeight.bold,
+                    color: colors.neutral[900],
+                    margin: 0,
+                    marginBottom: spacing.lg,
+                    paddingBottom: spacing.md,
+                    borderBottom: `2px solid ${colors.neutral[200]}`,
+                  }}
+                >
+                  Horario de Atencion
+                </h3>
+
+                <div style={{ marginBottom: spacing.xl }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: typography.fontSize.sm.size,
+                      fontWeight: typography.fontWeight.semibold,
+                      color: colors.neutral[700],
+                      marginBottom: spacing.sm,
+                    }}
+                  >
+                    Seleccione un Horario *
+                  </label>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                      gap: spacing.md,
+                    }}
+                  >
+                    {horarios.map(horario => (
+                      <label
+                        key={horario.id_horario}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: spacing.md,
+                          padding: spacing.md,
+                          background: formData.id_horario === String(horario.id_horario)
+                            ? `${config.theme.colors.primary}10`
+                            : colors.neutral[50],
+                          border: `2px solid ${formData.id_horario === String(horario.id_horario)
+                            ? config.theme.colors.primary
+                            : colors.neutral[200]}`,
+                          borderRadius: borderRadius.lg,
+                          cursor: 'pointer',
+                          transition: '0.3s',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="id_horario"
+                          value={horario.id_horario}
+                          checked={formData.id_horario === String(horario.id_horario)}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            cursor: 'pointer',
+                            accentColor: config.theme.colors.primary,
+                          }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              fontWeight: typography.fontWeight.semibold,
+                              fontSize: typography.fontSize.md.size,
+                              color: formData.id_horario === String(horario.id_horario)
+                                ? config.theme.colors.primary
+                                : colors.neutral[800],
+                              marginBottom: spacing.xs,
+                            }}
+                          >
+                            {horario.nombre}
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: spacing.md,
+                              fontSize: typography.fontSize.sm.size,
+                              color: colors.neutral[600],
+                            }}
+                          >
+                            <MdAccessTime size={16} />
+                            <span>{horario.horario_inicio.substring(0, 5)} - {horario.horario_fin.substring(0, 5)}</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mostrar resumen del horario seleccionado */}
+                {horarioSeleccionado && (
+                  <div
+                    style={{
+                      padding: spacing.md,
+                      background: colors.success.light,
+                      borderRadius: borderRadius.md,
+                      marginBottom: spacing.xl,
+                      border: `1px solid ${colors.success.main}`,
+                    }}
+                  >
+                    <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: spacing.md,
-                        cursor: 'pointer',
-                        fontSize: typography.fontSize.sm.size,
+                        gap: spacing.sm,
+                        marginBottom: spacing.sm,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={permisos[permiso.key]}
-                        onChange={() => handlePermissionChange(permiso.key)}
+                      <MdCheck size={18} style={{ color: colors.success.dark }} />
+                      <span
                         style={{
-                          width: '18px',
-                          height: '18px',
-                          cursor: 'pointer',
-                          accentColor: config.theme.colors.primary,
+                          fontWeight: typography.fontWeight.semibold,
+                          color: colors.success.dark,
                         }}
-                      />
-                      <span style={{ color: colors.neutral[900] }}>
-                        {permiso.label}
+                      >
+                        Horario seleccionado: {horarioSeleccionado.nombre}
                       </span>
-                    </label>
-                  ))}
+                    </div>
+                    <div style={{ fontSize: typography.fontSize.sm.size, color: colors.success.dark }}>
+                      Horario: {horarioSeleccionado.horario_inicio.substring(0, 5)} - {horarioSeleccionado.horario_fin.substring(0, 5)}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: typography.fontSize.sm.size,
+                      fontWeight: typography.fontWeight.semibold,
+                      color: colors.neutral[700],
+                      marginBottom: spacing.md,
+                    }}
+                  >
+                    Dias de Atencion * (Seleccione los dias que trabaja)
+                  </label>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                      gap: spacing.md,
+                    }}
+                  >
+                    {diasSemana.map(dia => (
+                      <label
+                        key={dia.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: spacing.sm,
+                          padding: spacing.md,
+                          background: formData.dias_atencion.includes(dia.id)
+                            ? `${config.theme.colors.primary}10`
+                            : colors.neutral[50],
+                          border: `2px solid ${formData.dias_atencion.includes(dia.id)
+                            ? config.theme.colors.primary
+                            : colors.neutral[200]}`,
+                          borderRadius: borderRadius.md,
+                          cursor: 'pointer',
+                          transition: '0.3s',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.dias_atencion.includes(dia.id)}
+                          onChange={() => handleDiaToggle(dia.id)}
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            cursor: 'pointer',
+                            accentColor: config.theme.colors.primary,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: typography.fontSize.sm.size,
+                            fontWeight: formData.dias_atencion.includes(dia.id)
+                              ? typography.fontWeight.semibold
+                              : typography.fontWeight.regular,
+                            color: formData.dias_atencion.includes(dia.id)
+                              ? config.theme.colors.primary
+                              : colors.neutral[600],
+                          }}
+                        >
+                          {dia.nombre}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {formData.dias_atencion.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: spacing.md,
+                        padding: spacing.sm,
+                        background: colors.success.light,
+                        borderRadius: borderRadius.md,
+                        display: 'inline-block',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: typography.fontSize.xs.size,
+                          color: colors.success.dark,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: spacing.xs,
+                        }}
+                      >
+                        <MdCheck size={14} />
+                        Dias seleccionados: {formData.dias_atencion.join(', ')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-              */}
-            </div>
+            )}
 
-            {/* Columna Derecha - Formulario */}
+            {/* Paso 4: Credenciales de Acceso */}
+            {currentStep === 3 && (
+              <div>
+                <h3
+                  style={{
+                    fontSize: typography.fontSize.lg.size,
+                    fontWeight: typography.fontWeight.bold,
+                    color: colors.neutral[900],
+                    margin: 0,
+                    marginBottom: spacing.lg,
+                    paddingBottom: spacing.md,
+                    borderBottom: `2px solid ${colors.neutral[200]}`,
+                  }}
+                >
+                  Credenciales de Acceso
+                </h3>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: spacing.lg,
+                    marginBottom: spacing.lg,
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Contraseña *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="contraseña"
+                        value={formData.contraseña}
+                        onChange={handleInputChange}
+                        style={{
+                          width: '100%',
+                          padding: `${spacing.md} ${spacing.xl} ${spacing.md} ${spacing.md}`,
+                          border: `2px solid ${colors.neutral[200]}`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm.size,
+                          outline: 'none',
+                          transition: '0.3s',
+                        }}
+                        onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: spacing.md,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: colors.neutral[500],
+                        }}
+                      >
+                        {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[700],
+                        marginBottom: spacing.xs,
+                      }}
+                    >
+                      Confirmar Contraseña *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmarContraseña"
+                        value={formData.confirmarContraseña}
+                        onChange={handleInputChange}
+                        style={{
+                          width: '100%',
+                          padding: `${spacing.md} ${spacing.xl} ${spacing.md} ${spacing.md}`,
+                          border: `2px solid ${
+                            formData.confirmarContraseña && formData.contraseña !== formData.confirmarContraseña
+                              ? colors.error.main
+                              : colors.neutral[200]
+                          }`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm.size,
+                          outline: 'none',
+                          transition: '0.3s',
+                        }}
+                        onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: spacing.md,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: colors.neutral[500],
+                        }}
+                      >
+                        {showConfirmPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                      </button>
+                    </div>
+                    {formData.confirmarContraseña && formData.contraseña !== formData.confirmarContraseña && (
+                      <p style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size, marginTop: spacing.xs }}>
+                        Las contraseñas no coinciden
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Requisitos de Contraseña */}
+                {formData.contraseña && (
+                  <div
+                    style={{
+                      padding: spacing.md,
+                      background: colors.neutral[50],
+                      border: `1px solid ${colors.neutral[200]}`,
+                      borderRadius: borderRadius.md,
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: typography.fontSize.sm.size,
+                        fontWeight: typography.fontWeight.semibold,
+                        color: colors.neutral[900],
+                        margin: 0,
+                        marginBottom: spacing.md,
+                      }}
+                    >
+                      Requisitos de contraseña:
+                    </p>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: spacing.md,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        {passwordValidation.mayuscula ? (
+                          <MdCheck size={18} style={{ color: colors.success.main }} />
+                        ) : (
+                          <MdClose size={18} style={{ color: colors.error.main }} />
+                        )}
+                        <span style={{ fontSize: typography.fontSize.xs.size }}>Una mayuscula (A-Z)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        {passwordValidation.minuscula ? (
+                          <MdCheck size={18} style={{ color: colors.success.main }} />
+                        ) : (
+                          <MdClose size={18} style={{ color: colors.error.main }} />
+                        )}
+                        <span style={{ fontSize: typography.fontSize.xs.size }}>Una minuscula (a-z)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        {passwordValidation.numero ? (
+                          <MdCheck size={18} style={{ color: colors.success.main }} />
+                        ) : (
+                          <MdClose size={18} style={{ color: colors.error.main }} />
+                        )}
+                        <span style={{ fontSize: typography.fontSize.xs.size }}>Un numero (0-9)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        {passwordValidation.caracterEspecial ? (
+                          <MdCheck size={18} style={{ color: colors.success.main }} />
+                        ) : (
+                          <MdClose size={18} style={{ color: colors.error.main }} />
+                        )}
+                        <span style={{ fontSize: typography.fontSize.xs.size }}>Caracter especial (!@#$%^&*)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        {passwordValidation.minimo8 ? (
+                          <MdCheck size={18} style={{ color: colors.success.main }} />
+                        ) : (
+                          <MdClose size={18} style={{ color: colors.error.main }} />
+                        )}
+                        <span style={{ fontSize: typography.fontSize.xs.size }}>Minimo 8 caracteres</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
             <div
               style={{
-                background: colors.neutral[0],
-                border: `1px solid ${colors.neutral[200]}`,
-                borderRadius: borderRadius.xl,
-                padding: spacing.lg,
-                boxShadow: shadows.md,
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: spacing.md,
+                marginTop: spacing['2xl'],
+                paddingTop: spacing.lg,
+                borderTop: `1px solid ${colors.neutral[200]}`,
               }}
             >
-              <h3
-                style={{
-                  fontSize: typography.fontSize.lg.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
-                  margin: 0,
-                  marginBottom: spacing.lg,
-                }}
-              >
-                Información del Usuario
-              </h3>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: spacing.lg,
-                  marginBottom: spacing.lg,
-                }}
-              >
-                {/* Nombre */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleInputChange}
-                    placeholder="Juan"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Apellido */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Apellido *
-                  </label>
-                  <input
-                    type="text"
-                    name="apellido"
-                    value={formData.apellido}
-                    onChange={handleInputChange}
-                    placeholder="García"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="juan@ejemplo.com"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Cédula */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Cédula *
-                  </label>
-                  <input
-                    type="text"
-                    name="cedula"
-                    value={formData.cedula}
-                    onChange={handleInputChange}
-                    placeholder="1234567"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Teléfono */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    placeholder="+591 4 1234567"
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Especialidad */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Especialidad *
-                  </label>
-                  <select
-                    name="especialidad"
-                    value={formData.especialidad}
-                    onChange={handleInputChange}
-                    disabled
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                      cursor: 'not-allowed',
-                      opacity: 0.6,
-                    }}
-                  >
-                    <option value="1">Odontología (ID: 1)</option>
-                  </select>
-                </div>
-
-                {/* Consultorio */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Consultorio *
-                  </label>
-                  <select
-                    name="consultorio"
-                    value={formData.consultorio}
-                    onChange={handleInputChange}
-                    disabled
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                      cursor: 'not-allowed',
-                      opacity: 0.6,
-                    }}
-                  >
-                    <option value="1">Consultorio Central (ID: 1)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div
-                style={{
-                  borderTop: `1px solid ${colors.neutral[200]}`,
-                  margin: `${spacing.lg} 0`,
-                }}
-              />
-
-              <h3
-                style={{
-                  fontSize: typography.fontSize.lg.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
-                  margin: 0,
-                  marginBottom: spacing.lg,
-                }}
-              >
-                Credenciales de Acceso
-              </h3>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: spacing.lg,
-                }}
-              >
-                {/* Usuario */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Usuario *
-                  </label>
-                  <input
-                    type="text"
-                    name="usuario"
-                    value={formData.usuario}
-                    onChange={handleInputChange}
-                    placeholder="juangarcia"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: spacing.md,
-                      border: `2px solid ${colors.neutral[200]}`,
-                      borderRadius: borderRadius.md,
-                      fontSize: typography.fontSize.sm.size,
-                      outline: 'none',
-                    }}
-                    onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                    onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                  />
-                </div>
-
-                {/* Contraseña */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Contraseña *
-                  </label>
-                  <div
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="contraseña"
-                      value={formData.contraseña}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      required
-                      style={{
-                        width: '100%',
-                        padding: spacing.md,
-                        border: `2px solid ${colors.neutral[200]}`,
-                        borderRadius: borderRadius.md,
-                        fontSize: typography.fontSize.sm.size,
-                        outline: 'none',
-                        paddingRight: spacing['2xl'],
-                      }}
-                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                      onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: spacing.md,
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: colors.neutral[400],
-                      }}
-                    >
-                      {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirmar Contraseña */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm.size,
-                      fontWeight: typography.fontWeight.semibold,
-                      color: colors.neutral[900],
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Confirmar Contraseña *
-                  </label>
-                  <div
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmarContraseña"
-                      value={formData.confirmarContraseña}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      required
-                      style={{
-                        width: '100%',
-                        padding: spacing.md,
-                        border: `2px solid ${colors.neutral[200]}`,
-                        borderRadius: borderRadius.md,
-                        fontSize: typography.fontSize.sm.size,
-                        outline: 'none',
-                        paddingRight: spacing['2xl'],
-                      }}
-                      onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                      onBlur={e => e.target.style.borderColor = colors.neutral[200]}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: spacing.md,
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: colors.neutral[400],
-                      }}
-                    >
-                      {showConfirmPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: spacing.md,
-                  marginTop: spacing.xl,
-                  paddingTop: spacing.lg,
-                  borderTop: `1px solid ${colors.neutral[200]}`,
-                }}
-              >
+              {currentStep > 0 && (
                 <button
                   type="button"
-                  onClick={onBack}
+                  onClick={pasoAnterior}
                   style={{
-                    flex: 1,
-                    padding: spacing.md,
-                    background: colors.neutral[200],
-                    color: colors.neutral[900],
-                    border: 'none',
+                    padding: `${spacing.md} ${spacing.lg}`,
+                    background: colors.neutral[100],
+                    color: colors.neutral[700],
+                    border: `1px solid ${colors.neutral[200]}`,
                     borderRadius: borderRadius.md,
                     fontWeight: typography.fontWeight.semibold,
+                    fontSize: typography.fontSize.sm.size,
                     cursor: 'pointer',
                     transition: '0.3s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
                   }}
-                  onMouseEnter={e => e.target.style.background = colors.neutral[300]}
-                  onMouseLeave={e => e.target.style.background = colors.neutral[200]}
+                  onMouseEnter={e => e.currentTarget.style.background = colors.neutral[200]}
+                  onMouseLeave={e => e.currentTarget.style.background = colors.neutral[100]}
                 >
-                  Cancelar
+                  <MdArrowBack size={18} />
+                  Atras
                 </button>
+              )}
+
+              {currentStep < pasos.length - 1 ? (
                 <button
-                  type="submit"
-                  disabled={loading}
+                  type="button"
+                  onClick={siguientePaso}
                   style={{
-                    flex: 1,
-                    padding: spacing.md,
+                    marginLeft: 'auto',
+                    padding: `${spacing.md} ${spacing.lg}`,
                     background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
                     color: colors.neutral[0],
                     border: 'none',
                     borderRadius: borderRadius.md,
                     fontWeight: typography.fontWeight.semibold,
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    fontSize: typography.fontSize.sm.size,
+                    cursor: 'pointer',
                     transition: '0.3s',
-                    opacity: loading ? 0.7 : 1,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
                     gap: spacing.sm,
                   }}
-                  onMouseEnter={e => !loading && (e.target.style.opacity = '0.9')}
-                  onMouseLeave={e => !loading && (e.target.style.opacity = '1')}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
-                  <MdSave size={20} />
-                  {loading ? 'Guardando...' : 'Guardar Usuario'}
+                  Siguiente
+                  <MdArrowForward size={18} />
                 </button>
-              </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!isFormValid() || loading}
+                  style={{
+                    marginLeft: 'auto',
+                    padding: `${spacing.md} ${spacing.lg}`,
+                    background: isFormValid()
+                      ? `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`
+                      : colors.neutral[300],
+                    color: colors.neutral[0],
+                    border: 'none',
+                    borderRadius: borderRadius.md,
+                    fontWeight: typography.fontWeight.semibold,
+                    fontSize: typography.fontSize.sm.size,
+                    cursor: isFormValid() && !loading ? 'pointer' : 'not-allowed',
+                    transition: '0.3s',
+                    opacity: isFormValid() ? 1 : 0.6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                  }}
+                  onMouseEnter={e => isFormValid() && !loading && (e.currentTarget.style.opacity = '0.9')}
+                  onMouseLeave={e => isFormValid() && !loading && (e.currentTarget.style.opacity = '1')}
+                >
+                  {loading ? 'Creando...' : 'Crear Doctor'}
+                  <MdCheck size={18} />
+                </button>
+              )}
             </div>
           </div>
         </form>
@@ -921,12 +1304,8 @@ const RegisterDct = ({ onBack }) => {
 
       <style>{`
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>

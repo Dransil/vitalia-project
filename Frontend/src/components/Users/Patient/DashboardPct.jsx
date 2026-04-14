@@ -1,70 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
-import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail } from 'react-icons/md';
+import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail, MdCake } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import * as doctoresService from '../../../Services/Doctoresservice';
+import * as pacientesService from '../../../Services/Pacienteservice';
 
-const Doctor_Dashboard = () => {
+const Pacientes_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
   const navigate = useNavigate();
 
+  // Estados de búsqueda y filtros
   const [searchName, setSearchName] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
 
-  const [doctores, setDoctores] = useState([]);
+  // Estados de datos
+  const [pacientes, setPacientes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Cargar pacientes al montar el componente
   useEffect(() => {
-    loadDoctores();
+    loadPacientes();
   }, []);
 
-  const loadDoctores = async () => {
+  // Función para cargar pacientes
+  const loadPacientes = async () => {
     setIsLoading(true);
     setHasError(false);
-    const result = await doctoresService.getDoctores();
+    const result = await pacientesService.getPacientes();
     
     if (result.ok) {
-      // Validar que sea un array
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      console.log(' Doctores cargados:', datosValidos);
-      setDoctores(datosValidos);
+      console.log('✅ Pacientes cargados:', datosValidos);
+      setPacientes(datosValidos);
       setHasError(false);
     } else {
-      setDoctores([]);
+      setPacientes([]);
       setHasError(true);
-      setErrorMsg(result.msg || 'Error al cargar los doctores');
-      console.error('Error:', result.msg);
+      setErrorMsg(result.msg || 'Error al cargar los pacientes');
+      console.error('❌ Error:', result.msg);
     }
     setIsLoading(false);
   };
 
   // Función para manejar búsqueda y filtros
   const handleSearch = async () => {
-    // Si todos los filtros están vacíos, cargar todos
     if (!searchName && !searchEmail && !searchPhone) {
-      loadDoctores();
+      loadPacientes();
       return;
     }
 
     setIsLoading(true);
     setHasError(false);
-    const result = await doctoresService.searchDoctores(searchName, searchEmail, searchPhone);
+    const result = await pacientesService.searchPacientes(searchName, searchEmail, searchPhone);
     
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      setDoctores(datosValidos);
+      setPacientes(datosValidos);
       setHasError(false);
     } else {
-      setDoctores([]);
+      setPacientes([]);
       setHasError(true);
       setErrorMsg(result.msg || 'Error en la búsqueda');
     }
     setIsLoading(false);
   };
 
+  // Ejecutar búsqueda cuando cambien los filtros (con debounce)
   useEffect(() => {
     const timer = setTimeout(() => {
       handleSearch();
@@ -78,51 +81,61 @@ const Doctor_Dashboard = () => {
     setSearchPhone('');
   };
 
-  const handleCreateUser = () => {
-    navigate('/Doctor_Register');
+  const handleCreatePaciente = () => {
+    navigate('/Patient_Register');
   };
 
-  const handleEditDoctor = (id) => {
-    navigate(`/doctor/edit/${id}`);
+  const handleEditPaciente = (id) => {
+    navigate(`/paciente/edit/${id}`);
   };
 
-  const handleDeleteDoctor = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este doctor?')) {
-      const result = await doctoresService.cambiarEstadoDoctor(id);
+  const handleDeletePaciente = async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este paciente?')) {
+      const result = await pacientesService.cambiarEstadoPaciente(id);
       if (result.ok) {
-        alert(result.msg || 'Doctor desactivado');
-        loadDoctores();
+        alert(result.msg || 'Paciente desactivado');
+        loadPacientes();
       } else {
-        alert(result.msg || 'Error al desactivar el doctor');
+        alert(result.msg || 'Error al desactivar el paciente');
       }
     }
   };
 
   // Función para sanitizar todos los campos
-  const sanitizeDoctor = (doctor) => {
-    // Validar que el objeto doctor no sea nulo o indefinido
-    if (!doctor || typeof doctor !== 'object') {
-      console.warn('Datos inválidos para doctor:', doctor);
-      return null;
-    }
+  const sanitizePaciente = (paciente) => {
+    if (!paciente) return null;
 
     return {
-      id: doctor.id_usuario || doctor.id || 0,
-      nombre: doctor.nombre || 'Sin nombre',
-      apellido: doctor.apellido || 'Sin apellido',
-      email: doctor.email || 'Sin email',
-      telefono: doctor.telefono || 'N/A',
-      cedula: doctor.cedula || 'N/A',
-      rol: doctor.rol || 'Sin rol',
-      estado: doctor.estado || 'desconocido',
-      horario_inicio: doctor.horario_inicio || 'No especificado',
-      horario_fin: doctor.horario_fin || 'No especificado',
-      dias_atencion: doctor.dias_atencion || 'No especificado',
-      id_especialidad: doctor.id_especialidad || null,
-      id_consultorio: doctor.id_consultorio || null,
-      fecha_registro: doctor.fecha_registro || null,
-      ultimo_acceso: doctor.ultimo_acceso || null,
+      id: paciente.id_paciente || paciente.id || 0,
+      nombre: paciente.nombre || 'Sin nombre',
+      apellido: paciente.apellido || 'Sin apellido',
+      email: paciente.email || 'Sin email',
+      telefono: paciente.telefono || 'N/A',
+      cedula: paciente.cedula || 'N/A',
+      estado: paciente.estado || 'desconocido',
+      fecha_nacimiento: paciente.fecha_nacimiento || 'No especificado',
+      genero: paciente.genero || 'No especificado',
+      direccion: paciente.direccion || 'No especificada',
+      ciudad: paciente.ciudad || 'No especificada',
+      grupo_sanguineo: paciente.grupo_sanguineo || 'No especificado',
+      alergias: paciente.alergias || 'Sin alergias registradas',
+      condiciones_medicas: paciente.condiciones_medicas || 'Sin condiciones',
+      registrado_por: paciente.registrado_por || null,
+      fecha_creacion: paciente.fecha_creacion || null,
     };
+  };
+
+  // Función para calcular edad
+  const calcularEdad = (fechaNacimiento) => {
+    if (!fechaNacimiento || fechaNacimiento === 'No especificado') return 'N/A';
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    return edad;
   };
 
   return (
@@ -138,10 +151,10 @@ const Doctor_Dashboard = () => {
             marginBottom: spacing.md,
           }}
         >
-          Registro General de Doctores
+          Registro de Pacientes
         </h1>
         <p style={{ color: colors.neutral[600], margin: 0 }}>
-          Gestiona todos los profesionales médicos del sistema
+          Gestiona todos los pacientes del consultorio. Total: {pacientes.length} pacientes
         </p>
       </div>
 
@@ -344,10 +357,10 @@ const Doctor_Dashboard = () => {
         </div>
       </div>
 
-      {/* Botón Crear Usuario */}
+      {/* Botón Crear Paciente */}
       <div style={{ marginBottom: spacing.lg }}>
         <button
-          onClick={handleCreateUser}
+          onClick={handleCreatePaciente}
           style={{
             padding: `${spacing.md} ${spacing.lg}`,
             background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
@@ -366,11 +379,11 @@ const Doctor_Dashboard = () => {
           onMouseLeave={e => e.target.style.opacity = '1'}
         >
           <MdAdd size={20} />
-          Crear Nuevo Usuario
+          Crear Nuevo Paciente
         </button>
       </div>
 
-      {/* Contenedor de Usuarios */}
+      {/* Contenedor de Pacientes */}
       <div
         style={{
           background: colors.neutral[0],
@@ -444,11 +457,11 @@ const Doctor_Dashboard = () => {
                   maxWidth: '300px',
                 }}
               >
-                {errorMsg || 'Parece que ocurrió un problema al intentar cargar la lista de doctores. Por favor, intenta más tarde.'}
+                {errorMsg || 'Parece que ocurrió un problema al intentar cargar la lista de pacientes. Por favor, intenta más tarde.'}
               </p>
 
               <button
-                onClick={loadDoctores}
+                onClick={loadPacientes}
                 style={{
                   padding: `${spacing.sm} ${spacing.lg}`,
                   background: colors.error.main,
@@ -494,11 +507,11 @@ const Doctor_Dashboard = () => {
                   fontSize: typography.fontSize.sm.size,
                 }}
               >
-                Cargando doctores...
+                Cargando pacientes...
               </p>
             </div>
-          ) : doctores && doctores.length > 0 ? (
-            // Data State - Tabla de doctores
+          ) : pacientes && pacientes.length > 0 ? (
+            // Data State - Tabla de pacientes
             <div
               style={{
                 display: 'flex',
@@ -506,10 +519,12 @@ const Doctor_Dashboard = () => {
                 gap: spacing.md,
               }}
             >
-              {doctores.map((doctor) => {
+              {pacientes.map((paciente) => {
                 // SANITIZAR TODOS LOS DATOS
-                const sanitized = sanitizeDoctor(doctor);
+                const sanitized = sanitizePaciente(paciente);
                 if (!sanitized) return null;
+
+                const edad = calcularEdad(sanitized.fecha_nacimiento);
 
                 return (
                   <div
@@ -536,12 +551,12 @@ const Doctor_Dashboard = () => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    {/* Información del Doctor */}
+                    {/* Información del Paciente */}
                     <div style={{ flex: 1 }}>
                       <h4
                         style={{
-                          fontSize: typography?.fontSize?.md?.size || '16px',
-                          fontWeight: typography?.fontWeight?.bold || 'bold',
+                          fontSize: typography.fontSize.md.size,
+                          fontWeight: typography.fontWeight.bold,
                           color: colors.neutral[900],
                           margin: 0,
                           marginBottom: spacing.sm,
@@ -553,8 +568,9 @@ const Doctor_Dashboard = () => {
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
+                          gridTemplateColumns: '1fr 1fr 1fr',
                           gap: spacing.md,
+                          marginBottom: spacing.sm,
                         }}
                       >
                         {/* Email */}
@@ -594,28 +610,63 @@ const Doctor_Dashboard = () => {
                             {sanitized.telefono}
                           </span>
                         </div>
+
+                        {/* Edad */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: spacing.sm,
+                          }}
+                        >
+                          <MdCake size={16} style={{ color: colors.neutral[500] }} />
+                          <span
+                            style={{
+                              fontSize: typography.fontSize.xs.size,
+                              color: colors.neutral[600],
+                            }}
+                          >
+                            {edad} años
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Rol y Estado */}
+                      {/* Cédula, Grupo Sanguíneo y Estado */}
                       <div
                         style={{
                           display: 'flex',
                           gap: spacing.md,
-                          marginTop: spacing.md,
+                          flexWrap: 'wrap',
                         }}
                       >
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
                             padding: `${spacing.sm/2} ${spacing.sm}`,
-                            background: config.theme.colors.primary,
-                            color: colors.neutral[0],
+                            background: colors.neutral[200],
+                            color: colors.neutral[800],
                             borderRadius: borderRadius.sm,
-                            textTransform: 'capitalize',
+                            fontWeight: 'normal',
                           }}
                         >
-                          {sanitized.rol}
+                          Cédula: {sanitized.cedula}
                         </span>
+                        
+                        {sanitized.grupo_sanguineo !== 'No especificado' && (
+                          <span
+                            style={{
+                              fontSize: typography.fontSize.xs.size,
+                              padding: `${spacing.sm/2} ${spacing.sm}`,
+                              background: colors.error.light,
+                              color: colors.error.dark,
+                              borderRadius: borderRadius.sm,
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {sanitized.grupo_sanguineo}
+                          </span>
+                        )}
+
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
@@ -640,7 +691,7 @@ const Doctor_Dashboard = () => {
                       }}
                     >
                       <button
-                        onClick={() => handleEditDoctor(sanitized.id)}
+                        onClick={() => handleEditPaciente(sanitized.id)}
                         style={{
                           padding: `${spacing.sm} ${spacing.md}`,
                           background: config.theme.colors.primary,
@@ -662,7 +713,7 @@ const Doctor_Dashboard = () => {
                       </button>
 
                       <button
-                        onClick={() => handleDeleteDoctor(sanitized.id)}
+                        onClick={() => handleDeletePaciente(sanitized.id)}
                         style={{
                           padding: `${spacing.sm} ${spacing.md}`,
                           background: colors.error.main,
@@ -700,7 +751,7 @@ const Doctor_Dashboard = () => {
               }}
             >
               <div style={{ fontSize: '48px', marginBottom: spacing.lg }}>
-                📋
+                👥
               </div>
 
               <h3
@@ -713,7 +764,7 @@ const Doctor_Dashboard = () => {
                   textAlign: 'center',
                 }}
               >
-                Sin doctores
+                Sin pacientes
               </h3>
 
               <p
@@ -723,10 +774,29 @@ const Doctor_Dashboard = () => {
                   margin: 0,
                   textAlign: 'center',
                   maxWidth: '300px',
+                  marginBottom: spacing.lg,
                 }}
               >
-                No hay doctores registrados. Crea uno para comenzar.
+                No hay pacientes registrados. Crea uno para comenzar.
               </p>
+
+              <button
+                onClick={handleCreatePaciente}
+                style={{
+                  padding: `${spacing.md} ${spacing.lg}`,
+                  background: config.theme.colors.primary,
+                  color: colors.neutral[0],
+                  border: 'none',
+                  borderRadius: borderRadius.md,
+                  fontWeight: typography.fontWeight.semibold,
+                  cursor: 'pointer',
+                  transition: '0.3s',
+                }}
+                onMouseEnter={e => e.target.style.opacity = '0.9'}
+                onMouseLeave={e => e.target.style.opacity = '1'}
+              >
+                Crear Primer Paciente
+              </button>
             </div>
           )}
         </div>
@@ -746,4 +816,4 @@ const Doctor_Dashboard = () => {
   );
 };
 
-export default Doctor_Dashboard;
+export default Pacientes_Dashboard;
