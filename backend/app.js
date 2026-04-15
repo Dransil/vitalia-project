@@ -13,6 +13,7 @@ const citaRoutes = require('./src/routes/citaRoutes')
 const horarioRoutes = require('./src/routes/horarioRoutes')
 const consultorioRoutes = require('./src/routes/consultorioRoutes')
 const especialidadRoutes = require('./src/routes/especialidadRoutes')
+const historialRoutes = require('./src/routes/historialRoutes')
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -33,6 +34,7 @@ app.use('/vitalia/citas', citaRoutes);
 app.use('/vitalia/horarios', horarioRoutes);
 app.use('/vitalia/consultorio', consultorioRoutes);
 app.use('/vitalia/especialidad', especialidadRoutes);
+app.use('/vitalia/historial', historialRoutes);
 
 app.use('/vitalia/auth', authRoutes);
 
