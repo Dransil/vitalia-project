@@ -7,5 +7,6 @@ router.get('/', especialidadController.obtenerEspecialidades);
 router.get('/:id', especialidadController.obtenerEspecialidadPorId);
 router.post('/', especialidadController.crearEspecialidad);
 router.put('/:id', especialidadController.actualizarEspecialidad);
+router.patch('/:id', especialidadController.cambiarEstadoEspecialidad);
 
 module.exports = router;

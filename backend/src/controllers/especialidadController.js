@@ -74,3 +74,28 @@ exports.actualizarEspecialidad = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al actualizar especialidad', error: error.message });
     }
 };
+
+// Cambiar estado de la especialidad
+exports.cambiarEstadoEspecialidad = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const especialidad = await Especialidad.findByPk(id);
+
+        if (!especialidad) {
+            return res.status(404).json({ ok: false, msg: 'Especialidad no encontrada' });
+        }
+
+        const nuevoEstado = especialidad.estado === 'activa' ? 'inactiva' : 'activa';
+        await especialidad.update({ estado: nuevoEstado });
+
+        res.json({
+            ok: true,
+            msg: `El estado de ${especialidad.nombre} ahora es: ${nuevoEstado}`,
+            estado: nuevoEstado
+        });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, msg: 'Error al cambiar estado', error: error.message });
+    }
+};
