@@ -14,10 +14,10 @@ import Specialty_Dashboard from './components/Users/Doctor/Speciality/Especialid
 import Schedule_Dashboard from './components/Schedule/Schedule_Dashboard.jsx';
 import Consultorios_Dashboard from './components/Users/Doctor/Office/DashboardMed.jsx';
 
-// 👈 Layout con Sidebar para rutas protegidas
 const ProtectedLayout = () => {
-  const { config, colors } = useTheme();
-  const backgroundColor = config.theme.background || colors.primary[50];
+  const themeContext = useTheme();
+  const colors = themeContext?.colors || { primary: { 50: '#f0f9ff' } };
+  const backgroundColor = colors.primary?.[50] || '#f0f9ff';
 
   return (
     <div style={{ 
