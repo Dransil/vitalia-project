@@ -30,3 +30,22 @@ exports.obtenerCotizaciones = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener cotizaciones', error: error.message });
     }
 };
+
+// Obtener cotizacion por ID
+exports.obtenerCotizacionPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const cotizacion = await Cotizacion.findByPk(id, { include: includeCompleto });
+
+        if (!cotizacion) {
+            return res.status(404).json({ ok: false, msg: 'Cotización no encontrada' });
+        }
+
+        res.json({ ok: true, msg: 'Cotización obtenida con éxito', data: cotizacion });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener cotización', error: error.message });
+    }
+};
