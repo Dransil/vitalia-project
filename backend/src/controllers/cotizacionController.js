@@ -1,5 +1,9 @@
 const { Cotizacion, Cita, Usuario, Paciente, TipoCita } = require('../models/associations');
 
+// La tabla cotizacion tiene relación de 1 a 1 con la tabla citas, por lo que se debe
+// tener en cuenta dicha restricción al momento de crear una cotizacion para dicha
+// cita y que no haya registros que se repitan.
+
 const includeCompleto = [
     {
         model: Cita,
@@ -47,5 +51,37 @@ exports.obtenerCotizacionPorId = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ ok: false, msg: 'Error al obtener cotización', error: error.message });
+    }
+};
+
+// Crear cotizacion
+exports.crearCotizacion = async (req, res) => {
+    try {
+        const { valor_base, valor_servicios_adicionales = 0, descuento_porcentaje = 0 } = req.body;
+
+        // Calcular subtotal y total automáticamente
+        const subtotal = parseFloat(valor_base) + parseFloat(valor_servicios_adicionales);
+        const descuento_monto = subtotal * (parseFloat(descuento_porcentaje) / 100);
+        const total = subtotal - descuento_monto;
+
+        const nuevaCotizacion = await Cotizacion.create({
+            ...req.body,
+            subtotal,
+            descuento_monto,
+            total
+        });
+
+        const cotizacionCompleta = await Cotizacion.findByPk(nuevaCotizacion.id_cotizacion, {
+            include: includeCompleto
+        });
+
+        res.status(201).json({ ok: true, msg: 'Cotización creada con éxito', data: cotizacionCompleta });
+
+    } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ ok: false, msg: 'Esta cita ya tiene una cotización registrada' });
+        }
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al crear cotización', error: error.message });
     }
 };
