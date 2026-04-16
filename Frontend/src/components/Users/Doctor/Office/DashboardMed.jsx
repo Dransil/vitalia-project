@@ -80,7 +80,7 @@ const Consultorios_Dashboard = () => {
   };
 
   const handleCreateConsultorio = () => {
-    navigate('/consultorio/crear');
+    navigate('/Create_Office');
   };
 
   const handleEditConsultorio = (id) => {
