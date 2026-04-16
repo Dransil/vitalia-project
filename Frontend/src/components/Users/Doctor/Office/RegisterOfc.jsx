@@ -245,7 +245,7 @@ const CreateConsultorio = () => {
       <div style={{ marginBottom: spacing?.['2xl'] || '48px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing?.md || '16px', marginBottom: spacing?.md || '16px' }}>
           <button
-            onClick={() => navigate('/consultorios')}
+            onClick={() => navigate('/Office_Dashboard')}
             style={{
               padding: spacing?.sm || '8px',
               background: colors?.neutral?.[100] || '#f3f4f6',

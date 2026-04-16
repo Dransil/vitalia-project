@@ -146,7 +146,7 @@ export const updateConsultorio = async (id, consultorioData) => {
 
 export const cambiarEstadoConsultorio = async (id) => {
   try {
-    const response = await api.patch(`/consultorio/estado/${id}`);
+    const response = await api.patch(`/consultorio/${id}`);
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Estado actualizado',

@@ -77,7 +77,7 @@ const Specialty_Dashboard = () => {
     
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      console.log('✅ Especialidades cargadas:', datosValidos);
+      console.log('Especialidades cargadas:', datosValidos);
       setEspecialidades(datosValidos);
     } else {
       setEspecialidades([]);
@@ -111,7 +111,7 @@ const Specialty_Dashboard = () => {
   }, [searchName]);
 
   const handleClearFilter = () => setSearchName('');
-  const handleCreateEspecialidad = () => navigate('/especialidad/crear');
+  const handleCreateEspecialidad = () => navigate('/Speciality_create');
   const handleEditEspecialidad = (id) => navigate(`/especialidad/edit/${id}`);
 
   const handleToggleEstado = async (id, nombre, estadoActual) => {

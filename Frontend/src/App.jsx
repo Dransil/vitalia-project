@@ -14,6 +14,7 @@ import Specialty_Dashboard from './components/Users/Doctor/Speciality/Especialid
 import Schedule_Dashboard from './components/Schedule/Schedule_Dashboard.jsx';
 import Consultorios_Dashboard from './components/Users/Doctor/Office/DashboardMed.jsx';
 import CreateConsultorio from './components/Users/Doctor/Office/RegisterOfc.jsx';
+import Speciality_create from './components/Users/Doctor/Speciality/Speciality_Create.jsx';
 
 const ProtectedLayout = () => {
   const themeContext = useTheme();
@@ -58,6 +59,7 @@ function App() {
             <Route path='/Schedule' element={<Schedule_Dashboard/>}/>
             <Route path='/Office_Dashboard' element={<Consultorios_Dashboard/>}/>
             <Route path='/Create_Office' element={<CreateConsultorio/>}/>
+            <Route path="/Speciality_create" element={<Speciality_create/>} />
           </Route>
         </Routes>
       </ThemeProvider>
