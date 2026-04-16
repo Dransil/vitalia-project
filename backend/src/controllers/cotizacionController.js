@@ -85,3 +85,40 @@ exports.crearCotizacion = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear cotización', error: error.message });
     }
 };
+
+// Actualizar cotizacion
+exports.actualizarCotizacion = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const cotizacion = await Cotizacion.findByPk(id);
+
+        if (!cotizacion) {
+            return res.status(404).json({ ok: false, msg: 'Cotización no encontrada' });
+        }
+
+        // Recalcular totales si vienen campos que los afectan
+        const valor_base = req.body.valor_base ?? cotizacion.valor_base;
+        const valor_servicios_adicionales = req.body.valor_servicios_adicionales ?? cotizacion.valor_servicios_adicionales;
+        const descuento_porcentaje = req.body.descuento_porcentaje ?? cotizacion.descuento_porcentaje;
+
+        const subtotal = parseFloat(valor_base) + parseFloat(valor_servicios_adicionales);
+        const descuento_monto = subtotal * (parseFloat(descuento_porcentaje) / 100);
+        const total = subtotal - descuento_monto;
+
+        await cotizacion.update({
+            ...req.body,
+            subtotal,
+            descuento_monto,
+            total
+        });
+
+        const cotizacionActualizada = await Cotizacion.findByPk(id, { include: includeCompleto });
+
+        res.json({ ok: true, msg: 'Cotización actualizada con éxito', data: cotizacionActualizada });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al actualizar cotización', error: error.message });
+    }
+};

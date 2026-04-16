@@ -6,5 +6,6 @@ const cotizacionController = require('../controllers/cotizacionController');
 router.get('/', cotizacionController.obtenerCotizaciones);
 router.get('/:id', cotizacionController.obtenerCotizacionPorId);
 router.post('/', cotizacionController.crearCotizacion);
+router.put('/:id', cotizacionController.actualizarCotizacion);
 
 module.exports = router;
