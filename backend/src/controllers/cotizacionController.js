@@ -122,3 +122,32 @@ exports.actualizarCotizacion = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al actualizar cotización', error: error.message });
     }
 };
+
+// Cambiar estado de la cotizacion
+exports.cambiarEstadoCotizacion = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+
+        const cotizacion = await Cotizacion.findByPk(id);
+
+        if (!cotizacion) {
+            return res.status(404).json({ ok: false, msg: 'Cotización no encontrada' });
+        }
+
+        // Si pasa a pagado, registrar fecha de pago automáticamente
+        const extra = estado === 'pagado' ? { fecha_pago: new Date() } : {};
+
+        await cotizacion.update({ estado, ...extra });
+
+        res.json({
+            ok: true,
+            msg: `Estado de cotización actualizado a '${estado}'`,
+            estado
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al cambiar estado', error: error.message });
+    }
+};
