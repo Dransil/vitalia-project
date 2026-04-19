@@ -49,3 +49,26 @@ exports.obtenerHistorialPorId = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener historial', error: error.message });
     }
 };
+
+// Crear historial
+exports.crearHistorial = async (req, res) => {
+    try {
+        const nuevoHistorial = await Historial.create({
+            ...req.body,
+            registrado_por: req.body.registrado_por // debe venir del body o del token JWT
+        });
+
+        const historialCompleto = await Historial.findByPk(nuevoHistorial.id_historial, {
+            include: includeCompleto
+        });
+
+        res.status(201).json({ ok: true, msg: 'Historial creado con éxito', data: historialCompleto });
+
+    } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ ok: false, msg: 'Esta cita ya tiene un historial registrado' });
+        }
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al crear historial', error: error.message });
+    }
+};
