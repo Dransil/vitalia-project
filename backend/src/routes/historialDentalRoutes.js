@@ -5,5 +5,6 @@ const historialdentalController = require('../controllers/historialDentalControl
 // Ruta: /vitalia/historialdental
 router.get('/', historialdentalController.obtenerHistorialesDentales);
 router.get('/:id', historialdentalController.obtenerHistorialDentalPorId);
+router.post('/', historialdentalController.crearHistorialDental);
 
 module.exports = router;
