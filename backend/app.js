@@ -15,6 +15,7 @@ const consultorioRoutes = require('./src/routes/consultorioRoutes')
 const especialidadRoutes = require('./src/routes/especialidadRoutes')
 const historialRoutes = require('./src/routes/historialRoutes')
 const cotizacionRoutes = require('./src/routes/cotizacionRoutes')
+const historialDentalRoutes = require('./src/routes/historialDentalRoutes')
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -37,6 +38,7 @@ app.use('/vitalia/consultorio', consultorioRoutes);
 app.use('/vitalia/especialidad', especialidadRoutes);
 app.use('/vitalia/historial', historialRoutes);
 app.use('/vitalia/cotizacion', cotizacionRoutes);
+app.use('/vitalia/historialdental, historialDentalRoutes');
 
 app.use('/vitalia/auth', authRoutes);
 
