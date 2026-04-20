@@ -71,3 +71,26 @@ exports.crearHistorialDental = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al crear historial dental', error: error.message });
     }
 };
+
+// Actualizar historial dental
+exports.actualizarHistorialDental = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const historial = await HistorialDental.findByPk(id);
+
+        if (!historial) {
+            return res.status(404).json({ ok: false, msg: 'Historial dental no encontrado' });
+        }
+
+        await historial.update(req.body);
+
+        const historialActualizado = await HistorialDental.findByPk(id, { include: includeCompleto });
+
+        res.json({ ok: true, msg: 'Historial dental actualizado con éxito', data: historialActualizado });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al actualizar historial dental', error: error.message });
+    }
+};

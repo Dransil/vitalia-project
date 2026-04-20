@@ -6,5 +6,6 @@ const historialdentalController = require('../controllers/historialDentalControl
 router.get('/', historialdentalController.obtenerHistorialesDentales);
 router.get('/:id', historialdentalController.obtenerHistorialDentalPorId);
 router.post('/', historialdentalController.crearHistorialDental);
+router.put('/:id', historialdentalController.actualizarHistorialDental);
 
 module.exports = router;
