@@ -2,34 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
 import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail, MdCake } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
+import { IoPersonOutline } from "react-icons/io5";
 import * as pacientesService from '../../../Services/Pacienteservice';
 
 const Pacientes_Dashboard = () => {
   const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
   const navigate = useNavigate();
 
-  // Estados de búsqueda y filtros
   const [searchName, setSearchName] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
 
-  // Estados de datos
   const [pacientes, setPacientes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Cargar pacientes al montar el componente
   useEffect(() => {
     loadPacientes();
   }, []);
 
-  // Función para cargar pacientes
   const loadPacientes = async () => {
     setIsLoading(true);
     setHasError(false);
     const result = await pacientesService.getPacientes();
-    
+
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
       console.log('✅ Pacientes cargados:', datosValidos);
@@ -44,7 +41,6 @@ const Pacientes_Dashboard = () => {
     setIsLoading(false);
   };
 
-  // Función para manejar búsqueda y filtros
   const handleSearch = async () => {
     if (!searchName && !searchEmail && !searchPhone) {
       loadPacientes();
@@ -54,7 +50,7 @@ const Pacientes_Dashboard = () => {
     setIsLoading(true);
     setHasError(false);
     const result = await pacientesService.searchPacientes(searchName, searchEmail, searchPhone);
-    
+
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
       setPacientes(datosValidos);
@@ -67,7 +63,6 @@ const Pacientes_Dashboard = () => {
     setIsLoading(false);
   };
 
-  // Ejecutar búsqueda cuando cambien los filtros (con debounce)
   useEffect(() => {
     const timer = setTimeout(() => {
       handleSearch();
@@ -101,9 +96,11 @@ const Pacientes_Dashboard = () => {
     }
   };
 
-  // Función para sanitizar todos los campos
   const sanitizePaciente = (paciente) => {
-    if (!paciente) return null;
+    if (!paciente || typeof paciente !== 'object') {
+      console.warn('Datos inválidos para paciente:', paciente);
+      return null;
+    }
 
     return {
       id: paciente.id_paciente || paciente.id || 0,
@@ -125,7 +122,6 @@ const Pacientes_Dashboard = () => {
     };
   };
 
-  // Función para calcular edad
   const calcularEdad = (fechaNacimiento) => {
     if (!fechaNacimiento || fechaNacimiento === 'No especificado') return 'N/A';
     const hoy = new Date();
@@ -154,7 +150,7 @@ const Pacientes_Dashboard = () => {
           Registro de Pacientes
         </h1>
         <p style={{ color: colors.neutral[600], margin: 0 }}>
-          Gestiona todos los pacientes del consultorio. Total: {pacientes.length} pacientes
+          Gestiona todos los pacientes del consultorio
         </p>
       </div>
 
@@ -200,14 +196,7 @@ const Pacientes_Dashboard = () => {
                 borderRadius: borderRadius.md,
               }}
             >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
+              <MdSearch size={20} style={{ position: 'absolute', left: spacing.md, color: colors.neutral[400] }} />
               <input
                 type="text"
                 value={searchName}
@@ -251,14 +240,7 @@ const Pacientes_Dashboard = () => {
                 borderRadius: borderRadius.md,
               }}
             >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
+              <MdSearch size={20} style={{ position: 'absolute', left: spacing.md, color: colors.neutral[400] }} />
               <input
                 type="email"
                 value={searchEmail}
@@ -302,14 +284,7 @@ const Pacientes_Dashboard = () => {
                 borderRadius: borderRadius.md,
               }}
             >
-              <MdSearch
-                size={20}
-                style={{
-                  position: 'absolute',
-                  left: spacing.md,
-                  color: colors.neutral[400],
-                }}
-              />
+              <MdSearch size={20} style={{ position: 'absolute', left: spacing.md, color: colors.neutral[400] }} />
               <input
                 type="tel"
                 value={searchPhone}
@@ -396,16 +371,8 @@ const Pacientes_Dashboard = () => {
           height: '600px',
         }}
       >
-        {/* Contenido Scrollable */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: spacing.lg,
-          }}
-        >
+        <div style={{ flex: 1, overflow: 'auto', padding: spacing.lg }}>
           {hasError ? (
-            // Error State
             <div
               style={{
                 display: 'flex',
@@ -428,12 +395,8 @@ const Pacientes_Dashboard = () => {
                   marginBottom: spacing.lg,
                 }}
               >
-                <MdErrorOutline
-                  size={40}
-                  style={{ color: colors.error.main }}
-                />
+                <MdErrorOutline size={40} style={{ color: colors.error.main }} />
               </div>
-
               <h3
                 style={{
                   fontSize: typography.fontSize.lg.size,
@@ -446,7 +409,6 @@ const Pacientes_Dashboard = () => {
               >
                 No se pudo cargar los datos
               </h3>
-
               <p
                 style={{
                   fontSize: typography.fontSize.sm.size,
@@ -459,7 +421,6 @@ const Pacientes_Dashboard = () => {
               >
                 {errorMsg || 'Parece que ocurrió un problema al intentar cargar la lista de pacientes. Por favor, intenta más tarde.'}
               </p>
-
               <button
                 onClick={loadPacientes}
                 style={{
@@ -480,7 +441,6 @@ const Pacientes_Dashboard = () => {
               </button>
             </div>
           ) : isLoading ? (
-            // Loading State
             <div
               style={{
                 display: 'flex',
@@ -500,27 +460,13 @@ const Pacientes_Dashboard = () => {
                   animation: 'spin 1s linear infinite',
                 }}
               />
-              <p
-                style={{
-                  marginTop: spacing.lg,
-                  color: colors.neutral[600],
-                  fontSize: typography.fontSize.sm.size,
-                }}
-              >
+              <p style={{ marginTop: spacing.lg, color: colors.neutral[600], fontSize: typography.fontSize.sm.size }}>
                 Cargando pacientes...
               </p>
             </div>
           ) : pacientes && pacientes.length > 0 ? (
-            // Data State - Tabla de pacientes
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: spacing.md,
-              }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
               {pacientes.map((paciente) => {
-                // SANITIZAR TODOS LOS DATOS
                 const sanitized = sanitizePaciente(paciente);
                 if (!sanitized) return null;
 
@@ -555,8 +501,9 @@ const Pacientes_Dashboard = () => {
                     <div style={{ flex: 1 }}>
                       <h4
                         style={{
-                          fontSize: typography.fontSize.md.size,
-                          fontWeight: typography.fontWeight.bold,
+                         
+                          fontSize: typography?.fontSize?.md?.size || '16px',
+                          fontWeight: typography?.fontWeight?.bold || 'bold',
                           color: colors.neutral[900],
                           margin: 0,
                           marginBottom: spacing.sm,
@@ -573,90 +520,47 @@ const Pacientes_Dashboard = () => {
                           marginBottom: spacing.sm,
                         }}
                       >
-                        {/* Email */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.sm,
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
                           <MdEmail size={16} style={{ color: colors.neutral[500] }} />
-                          <span
-                            style={{
-                              fontSize: typography.fontSize.xs.size,
-                              color: colors.neutral[600],
-                            }}
-                          >
+                          <span style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[600] }}>
                             {sanitized.email}
                           </span>
                         </div>
 
-                        {/* Teléfono */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.sm,
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
                           <MdCall size={16} style={{ color: colors.neutral[500] }} />
-                          <span
-                            style={{
-                              fontSize: typography.fontSize.xs.size,
-                              color: colors.neutral[600],
-                            }}
-                          >
+                          <span style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[600] }}>
                             {sanitized.telefono}
                           </span>
                         </div>
 
-                        {/* Edad */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.sm,
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
                           <MdCake size={16} style={{ color: colors.neutral[500] }} />
-                          <span
-                            style={{
-                              fontSize: typography.fontSize.xs.size,
-                              color: colors.neutral[600],
-                            }}
-                          >
+                          <span style={{ fontSize: typography.fontSize.xs.size, color: colors.neutral[600] }}>
                             {edad} años
                           </span>
                         </div>
                       </div>
 
-                      {/* Cédula, Grupo Sanguíneo y Estado */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: spacing.md,
-                          flexWrap: 'wrap',
-                        }}
-                      >
+                      {/* Badges */}
+                      <div style={{ display: 'flex', gap: spacing.md, flexWrap: 'wrap', marginTop: spacing.md }}>
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
-                            padding: `${spacing.sm/2} ${spacing.sm}`,
+                            padding: `${spacing.sm / 2}px ${spacing.sm}`,
                             background: colors.neutral[200],
                             color: colors.neutral[800],
                             borderRadius: borderRadius.sm,
-                            fontWeight: 'normal',
                           }}
                         >
                           Cédula: {sanitized.cedula}
                         </span>
-                        
+
                         {sanitized.grupo_sanguineo !== 'No especificado' && (
                           <span
                             style={{
                               fontSize: typography.fontSize.xs.size,
-                              padding: `${spacing.sm/2} ${spacing.sm}`,
+                              padding: `${spacing.sm / 2}px ${spacing.sm}`,
                               background: colors.error.light,
                               color: colors.error.dark,
                               borderRadius: borderRadius.sm,
@@ -670,7 +574,7 @@ const Pacientes_Dashboard = () => {
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
-                            padding: `${spacing.sm/2} ${spacing.sm}`,
+                            padding: `${spacing.sm / 2}px ${spacing.sm}`,
                             background: sanitized.estado === 'activo' ? colors.success.light : colors.error.light,
                             color: sanitized.estado === 'activo' ? colors.success.dark : colors.error.dark,
                             borderRadius: borderRadius.sm,
@@ -683,13 +587,7 @@ const Pacientes_Dashboard = () => {
                     </div>
 
                     {/* Botones de Acciones */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: spacing.md,
-                        marginLeft: spacing.lg,
-                      }}
-                    >
+                    <div style={{ display: 'flex', gap: spacing.md, marginLeft: spacing.lg }}>
                       <button
                         onClick={() => handleEditPaciente(sanitized.id)}
                         style={{
@@ -739,7 +637,6 @@ const Pacientes_Dashboard = () => {
               })}
             </div>
           ) : (
-            // Empty State
             <div
               style={{
                 display: 'flex',
@@ -751,9 +648,8 @@ const Pacientes_Dashboard = () => {
               }}
             >
               <div style={{ fontSize: '48px', marginBottom: spacing.lg }}>
-                👥
+                <IoPersonOutline />
               </div>
-
               <h3
                 style={{
                   fontSize: typography.fontSize.lg.size,
@@ -766,7 +662,6 @@ const Pacientes_Dashboard = () => {
               >
                 Sin pacientes
               </h3>
-
               <p
                 style={{
                   fontSize: typography.fontSize.sm.size,
@@ -774,43 +669,18 @@ const Pacientes_Dashboard = () => {
                   margin: 0,
                   textAlign: 'center',
                   maxWidth: '300px',
-                  marginBottom: spacing.lg,
                 }}
               >
                 No hay pacientes registrados. Crea uno para comenzar.
               </p>
-
-              <button
-                onClick={handleCreatePaciente}
-                style={{
-                  padding: `${spacing.md} ${spacing.lg}`,
-                  background: config.theme.colors.primary,
-                  color: colors.neutral[0],
-                  border: 'none',
-                  borderRadius: borderRadius.md,
-                  fontWeight: typography.fontWeight.semibold,
-                  cursor: 'pointer',
-                  transition: '0.3s',
-                }}
-                onMouseEnter={e => e.target.style.opacity = '0.9'}
-                onMouseLeave={e => e.target.style.opacity = '1'}
-              >
-                Crear Primer Paciente
-              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* CSS para animación de carga */}
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
     </div>
   );

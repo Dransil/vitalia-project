@@ -34,7 +34,17 @@ export const ThemeProvider = ({ children }) => {
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme debe ser usado dentro de ThemeProvider');
+    console.warn('useTheme usado fuera de ThemeProvider - usando valores por defecto');
+    // Retornar valores por defecto completos
+    return {
+      colors: theme.colors,
+      spacing: theme.spacing,
+      typography: theme.typography,
+      borderRadius: theme.borderRadius,
+      shadows: theme.shadows,
+      config: { theme: { colors: { primary: '#0ea5e9', secondary: '#14b8a6' } } },
+      updateThemeConfig: () => {},
+    };
   }
   return context;
 };

@@ -23,7 +23,7 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
   ];
 
   const scheduleDropdownItems = [
-    { id: 'view-schedules', label: 'Ver horarios', icon: MdSchedule, path: '/ViewSchedules' },
+    { id: 'view-schedules', label: 'Ver horarios', icon: MdSchedule, path: '/Schedule' },
     { id: 'agenda', label: 'Agenda', icon: MdEventNote, path: '/Agenda' },
   ];
 

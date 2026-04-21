@@ -1,15 +1,72 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   MdArrowBack, MdArrowForward, MdCheck, MdPerson, 
   MdHome, MdLocalHospital, MdEmergency, MdSecurity,
-  MdAssignmentInd
+  MdAssignmentInd, MdErrorOutline
 } from 'react-icons/md';
+import * as pacientesService from '../../../Services/Pacienteservice';
+
+// VALORES POR DEFECTO
+const DEFAULT_COLORS = {
+  neutral: { 0: '#fff', 50: '#f9fafb', 100: '#f3f4f6', 200: '#e5e7eb', 300: '#d1d5db', 400: '#9ca3af', 500: '#6b7280', 600: '#4b5563', 700: '#374151', 800: '#1f2937', 900: '#111827' },
+  success: { light: '#d1fae5', main: '#10b981', dark: '#059669' },
+  error: { light: '#fee2e2', main: '#dc2626', dark: '#991b1b' },
+  warning: { light: '#fef3c7', main: '#f59e0b', dark: '#d97706' },
+  primary: { 500: '#0ea5e9', 600: '#0284c7' },
+  secondary: { 500: '#14b8a6' }
+};
+
+const DEFAULT_SPACING = { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '32px', '2xl': '48px', '3xl': '64px' };
+
+const DEFAULT_TYPOGRAPHY = {
+  fontSize: {
+    xs: { size: '12px', lineHeight: '16px' },
+    sm: { size: '14px', lineHeight: '20px' },
+    md: { size: '16px', lineHeight: '24px' },
+    lg: { size: '18px', lineHeight: '28px' },
+    xl: { size: '20px', lineHeight: '28px' },
+    '2xl': { size: '24px', lineHeight: '32px' },
+    '3xl': { size: '30px', lineHeight: '36px' }
+  },
+  fontWeight: { normal: 400, medium: 500, semibold: 600, bold: 700 }
+};
+
+const DEFAULT_BORDER_RADIUS = { sm: '4px', md: '6px', lg: '8px', xl: '12px', full: '9999px' };
+const DEFAULT_SHADOWS = { sm: '0 1px 2px 0 rgba(0,0,0,0.05)', md: '0 4px 6px -1px rgba(0,0,0,0.1)', lg: '0 10px 15px -3px rgba(0,0,0,0.1)' };
+
+const DEFAULT_CONFIG = {
+  theme: {
+    colors: {
+      primary: DEFAULT_COLORS.primary[500],
+      secondary: DEFAULT_COLORS.secondary[500]
+    }
+  }
+};
 
 const PatientRegister = () => {
-  const { config, colors, spacing, typography, borderRadius, shadows } = useTheme();
+  const navigate = useNavigate();
   
+  // Intentar obtener el tema, si falla usar defaults
+  let themeContext = {};
+  try {
+    themeContext = useTheme() || {};
+  } catch (e) {
+    console.warn('ThemeContext no disponible, usando valores por defecto');
+  }
+
+  // USAR VALORES DEL CONTEXTO O DEFAULTS
+  const config = themeContext.config || DEFAULT_CONFIG;
+  const colors = themeContext.colors || DEFAULT_COLORS;
+  const spacing = themeContext.spacing || DEFAULT_SPACING;
+  const typography = themeContext.typography || DEFAULT_TYPOGRAPHY;
+  const borderRadius = themeContext.borderRadius || DEFAULT_BORDER_RADIUS;
+  const shadows = themeContext.shadows || DEFAULT_SHADOWS;
+
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   
   // Estados para cada seccion del formulario
   const [formData, setFormData] = useState({
@@ -67,22 +124,22 @@ const PatientRegister = () => {
     const nuevosErrores = {};
     
     if (currentStep === 0) {
-      if (!formData.nombre) nuevosErrores.nombre = 'Nombre requerido';
-      if (!formData.apellido) nuevosErrores.apellido = 'Apellido requerido';
-      if (!formData.cedula) nuevosErrores.cedula = 'Cedula requerida';
-      if (!formData.email) nuevosErrores.email = 'Email requerido';
-      if (!formData.telefono) nuevosErrores.telefono = 'Telefono requerido';
+      if (!formData.nombre.trim()) nuevosErrores.nombre = 'Nombre requerido';
+      if (!formData.apellido.trim()) nuevosErrores.apellido = 'Apellido requerido';
+      if (!formData.cedula.trim()) nuevosErrores.cedula = 'Cedula requerida';
+      if (!formData.email.trim()) nuevosErrores.email = 'Email requerido';
+      if (!formData.telefono.trim()) nuevosErrores.telefono = 'Telefono requerido';
       if (!formData.fecha_nacimiento) nuevosErrores.fecha_nacimiento = 'Fecha requerida';
     }
     
     if (currentStep === 1) {
-      if (!formData.direccion) nuevosErrores.direccion = 'Direccion requerida';
-      if (!formData.ciudad) nuevosErrores.ciudad = 'Ciudad requerida';
+      if (!formData.direccion.trim()) nuevosErrores.direccion = 'Direccion requerida';
+      if (!formData.ciudad.trim()) nuevosErrores.ciudad = 'Ciudad requerida';
     }
     
     if (currentStep === 3) {
-      if (!formData.contacto_emergencia_nombre) nuevosErrores.contacto_emergencia_nombre = 'Nombre requerido';
-      if (!formData.contacto_emergencia_telefono) nuevosErrores.contacto_emergencia_telefono = 'Telefono requerido';
+      if (!formData.contacto_emergencia_nombre.trim()) nuevosErrores.contacto_emergencia_nombre = 'Nombre requerido';
+      if (!formData.contacto_emergencia_telefono.trim()) nuevosErrores.contacto_emergencia_telefono = 'Telefono requerido';
       if (!formData.contacto_emergencia_relacion) nuevosErrores.contacto_emergencia_relacion = 'Relacion requerida';
     }
     
@@ -102,9 +159,34 @@ const PatientRegister = () => {
     }
   };
 
-  const handleSubmit = () => {
-    alert('Paciente creado exitosamente (Demo)');
-    console.log('Datos del paciente:', formData);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      console.log('📤 Guardando paciente con datos:', formData);
+      
+      const result = await pacientesService.createPaciente(formData);
+
+      if (result.ok) {
+        console.log(' Paciente creado exitosamente:', result.data);
+        alert(result.msg || ' Paciente creado exitosamente');
+        
+        // Redirigir al dashboard de pacientes después de 1 segundo
+        setTimeout(() => {
+          navigate('/Patient_Dashboard');
+        }, 1000);
+      } else {
+        console.error('Error del servidor:', result.msg);
+        setSubmitError(result.msg || 'Error al crear el paciente');
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      setSubmitError('Error inesperado al crear el paciente');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const progressPercentage = ((currentStep + 1) / pasos.length) * 100;
@@ -113,51 +195,55 @@ const PatientRegister = () => {
   return (
     <div style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
       {/* Header */}
-      <div style={{ marginBottom: spacing['2xl'] }}>
+      <div style={{ marginBottom: spacing?.['2xl'] || '48px' }}>
         <h1 style={{
-          fontSize: typography.fontSize['3xl'].size,
-          fontWeight: typography.fontWeight.bold,
-          color: colors.neutral[900],
+          fontSize: typography?.fontSize?.['3xl']?.size || '30px',
+          fontWeight: typography?.fontWeight?.bold || 700,
+          color: colors?.neutral?.[900] || '#111827',
           margin: 0,
-          marginBottom: spacing.md
+          marginBottom: spacing?.md || '16px'
         }}>
           Registrar Nuevo Paciente
         </h1>
-        <p style={{ color: colors.neutral[600], margin: 0 }}>
+        <p style={{ 
+          color: colors?.neutral?.[600] || '#4b5563', 
+          margin: 0,
+          fontSize: typography?.fontSize?.sm?.size || '14px'
+        }}>
           Complete la informacion del paciente en los siguientes pasos
         </p>
       </div>
 
       {/* Progress Section */}
       <div style={{
-        background: colors.neutral[0],
-        border: `1px solid ${colors.neutral[200]}`,
-        borderRadius: borderRadius.xl,
-        padding: spacing.lg,
-        marginBottom: spacing.lg,
-        boxShadow: shadows.sm
+        background: colors?.neutral?.[0] || '#fff',
+        border: `1px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+        borderRadius: borderRadius?.xl || '12px',
+        padding: spacing?.lg || '24px',
+        marginBottom: spacing?.lg || '24px',
+        boxShadow: shadows?.sm || '0 1px 2px 0 rgba(0,0,0,0.05)'
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: spacing.md
+          marginBottom: spacing?.md || '16px'
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: spacing.sm,
-            fontSize: typography.fontSize.sm.size,
-            fontWeight: typography.fontWeight.semibold,
-            color: colors.neutral[700]
+            gap: spacing?.sm || '8px',
+            fontSize: typography?.fontSize?.sm?.size || '14px',
+            fontWeight: typography?.fontWeight?.semibold || 600,
+            color: colors?.neutral?.[700] || '#374151'
           }}>
-            <CurrentIcon size={20} style={{ color: config.theme.colors.primary }} />
+            <CurrentIcon size={20} style={{ color: config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary }} />
             Paso {currentStep + 1} de {pasos.length}
           </div>
           <div style={{
-            fontSize: typography.fontSize.sm.size,
-            fontWeight: typography.fontWeight.medium,
-            color: colors.neutral[600]
+            fontSize: typography?.fontSize?.sm?.size || '14px',
+            fontWeight: typography?.fontWeight?.medium || 500,
+            color: colors?.neutral?.[600] || '#4b5563'
           }}>
             {pasos[currentStep].titulo}
           </div>
@@ -166,27 +252,51 @@ const PatientRegister = () => {
         {/* Progress Bar */}
         <div style={{
           height: '8px',
-          background: colors.neutral[200],
-          borderRadius: borderRadius.full,
+          background: colors?.neutral?.[200] || '#e5e7eb',
+          borderRadius: borderRadius?.full || '9999px',
           overflow: 'hidden'
         }}>
           <div style={{
             width: `${progressPercentage}%`,
             height: '100%',
-            background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
-            borderRadius: borderRadius.full,
+            background: `linear-gradient(to right, ${config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary}, ${config?.theme?.colors?.secondary || DEFAULT_CONFIG.theme.colors.secondary})`,
+            borderRadius: borderRadius?.full || '9999px',
             transition: 'width 0.3s ease'
           }} />
         </div>
       </div>
 
+      {/* Error Alert */}
+      {submitError && (
+        <div style={{
+          background: colors?.error?.light || '#fee2e2',
+          border: `1px solid ${colors?.error?.main || '#dc2626'}`,
+          borderRadius: borderRadius?.lg || '8px',
+          padding: spacing?.lg || '24px',
+          marginBottom: spacing?.lg || '24px',
+          display: 'flex',
+          gap: spacing?.md || '16px',
+          alignItems: 'flex-start'
+        }}>
+          <MdErrorOutline size={24} style={{ color: colors?.error?.main || '#dc2626', marginTop: '2px' }} />
+          <div>
+            <h4 style={{ margin: 0, color: colors?.error?.dark || '#991b1b', fontSize: typography?.fontSize?.sm?.size || '14px' }}>
+              Error al guardar
+            </h4>
+            <p style={{ margin: 0, color: colors?.error?.dark || '#991b1b', fontSize: typography?.fontSize?.sm?.size || '14px' }}>
+              {submitError}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Form Container */}
       <div style={{
-        background: colors.neutral[0],
-        border: `1px solid ${colors.neutral[200]}`,
-        borderRadius: borderRadius.xl,
-        padding: spacing['2xl'],
-        boxShadow: shadows.md
+        background: colors?.neutral?.[0] || '#fff',
+        border: `1px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+        borderRadius: borderRadius?.xl || '12px',
+        padding: spacing?.['2xl'] || '48px',
+        boxShadow: shadows?.md || '0 4px 6px -1px rgba(0,0,0,0.1)'
       }}>
         {/* Step 1: Informacion Basica */}
         {currentStep === 0 && (
@@ -194,16 +304,16 @@ const PatientRegister = () => {
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: spacing.lg,
-              marginBottom: spacing.lg
+              gap: spacing?.lg || '24px',
+              marginBottom: spacing?.lg || '24px'
             }}>
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Nombre *
                 </label>
@@ -212,21 +322,25 @@ const PatientRegister = () => {
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.nombre ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.nombre ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
                     outline: 'none',
-                    transition: '0.3s'
+                    transition: '0.3s',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
-                  onBlur={e => e.target.style.borderColor = errors.nombre ? colors.error.main : colors.neutral[200]}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.nombre ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                   placeholder="Nombre del paciente"
                 />
                 {errors.nombre && (
-                  <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size, marginTop: spacing.xs }}>
+                  <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', marginTop: spacing?.xs || '4px', display: 'block' }}>
                     {errors.nombre}
                   </span>
                 )}
@@ -235,10 +349,10 @@ const PatientRegister = () => {
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Apellido *
                 </label>
@@ -247,20 +361,25 @@ const PatientRegister = () => {
                   name="apellido"
                   value={formData.apellido}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.apellido ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.apellido ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
                     outline: 'none',
-                    transition: '0.3s'
+                    transition: '0.3s',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.apellido ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                   placeholder="Apellido del paciente"
                 />
                 {errors.apellido && (
-                  <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.apellido}</span>
+                  <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.apellido}</span>
                 )}
               </div>
             </div>
@@ -268,16 +387,16 @@ const PatientRegister = () => {
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: spacing.lg,
-              marginBottom: spacing.lg
+              gap: spacing?.lg || '24px',
+              marginBottom: spacing?.lg || '24px'
             }}>
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Cedula *
                 </label>
@@ -286,27 +405,32 @@ const PatientRegister = () => {
                   name="cedula"
                   value={formData.cedula}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.cedula ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
-                    outline: 'none'
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.cedula ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
+                    outline: 'none',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.cedula ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                   placeholder="12345678"
                 />
-                {errors.cedula && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.cedula}</span>}
+                {errors.cedula && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.cedula}</span>}
               </div>
               
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Email *
                 </label>
@@ -315,33 +439,38 @@ const PatientRegister = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.email ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
-                    outline: 'none'
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.email ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
+                    outline: 'none',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.email ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                   placeholder="paciente@email.com"
                 />
-                {errors.email && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.email}</span>}
+                {errors.email && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.email}</span>}
               </div>
             </div>
 
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: spacing.lg
+              gap: spacing?.lg || '24px'
             }}>
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Telefono *
                 </label>
@@ -350,27 +479,32 @@ const PatientRegister = () => {
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.telefono ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
-                    outline: 'none'
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.telefono ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
+                    outline: 'none',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.telefono ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                   placeholder="0999999999"
                 />
-                {errors.telefono && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.telefono}</span>}
+                {errors.telefono && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.telefono}</span>}
               </div>
               
               <div>
                 <label style={{
                   display: 'block',
-                  fontSize: typography.fontSize.sm.size,
-                  fontWeight: typography.fontWeight.semibold,
-                  color: colors.neutral[700],
-                  marginBottom: spacing.xs
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  fontWeight: typography?.fontWeight?.semibold || 600,
+                  color: colors?.neutral?.[700] || '#374151',
+                  marginBottom: spacing?.xs || '4px'
                 }}>
                   Fecha de Nacimiento *
                 </label>
@@ -379,17 +513,22 @@ const PatientRegister = () => {
                   name="fecha_nacimiento"
                   value={formData.fecha_nacimiento}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${errors.fecha_nacimiento ? colors.error.main : colors.neutral[200]}`,
-                    borderRadius: borderRadius.md,
-                    fontSize: typography.fontSize.sm.size,
-                    outline: 'none'
+                    padding: spacing?.md || '16px',
+                    border: `2px solid ${errors.fecha_nacimiento ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                    borderRadius: borderRadius?.md || '6px',
+                    fontSize: typography?.fontSize?.sm?.size || '14px',
+                    outline: 'none',
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'text',
+                    boxSizing: 'border-box'
                   }}
-                  onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                  onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                  onBlur={e => e.target.style.borderColor = errors.fecha_nacimiento ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                 />
-                {errors.fecha_nacimiento && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.fecha_nacimiento}</span>}
+                {errors.fecha_nacimiento && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.fecha_nacimiento}</span>}
               </div>
             </div>
           </div>
@@ -398,13 +537,13 @@ const PatientRegister = () => {
         {/* Step 2: Informacion Domiciliaria */}
         {currentStep === 1 && (
           <div>
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Direccion *
               </label>
@@ -413,27 +552,32 @@ const PatientRegister = () => {
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${errors.direccion ? colors.error.main : colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${errors.direccion ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = errors.direccion ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="Calle principal #123"
               />
-              {errors.direccion && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.direccion}</span>}
+              {errors.direccion && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.direccion}</span>}
             </div>
 
             <div>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Ciudad *
               </label>
@@ -442,18 +586,23 @@ const PatientRegister = () => {
                 name="ciudad"
                 value={formData.ciudad}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${errors.ciudad ? colors.error.main : colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${errors.ciudad ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = errors.ciudad ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="Ciudad"
               />
-              {errors.ciudad && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.ciudad}</span>}
+              {errors.ciudad && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.ciudad}</span>}
             </div>
           </div>
         )}
@@ -461,13 +610,13 @@ const PatientRegister = () => {
         {/* Step 3: Informacion Medica */}
         {currentStep === 2 && (
           <div>
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Alergias
               </label>
@@ -475,29 +624,34 @@ const PatientRegister = () => {
                 name="alergias"
                 value={formData.alergias}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
                   fontFamily: 'inherit',
                   outline: 'none',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
                 rows="3"
                 placeholder="Ej: Penicilina, Polen, Mariscos..."
               />
             </div>
 
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Condiciones Medicas
               </label>
@@ -505,29 +659,34 @@ const PatientRegister = () => {
                 name="condiciones_medicas"
                 value={formData.condiciones_medicas}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
                   fontFamily: 'inherit',
                   outline: 'none',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
                 rows="3"
                 placeholder="Ej: Hipertension, Diabetes, Asma..."
               />
             </div>
 
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Medicamentos Actuales
               </label>
@@ -535,17 +694,22 @@ const PatientRegister = () => {
                 name="medicamentos_actuales"
                 value={formData.medicamentos_actuales}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
                   fontFamily: 'inherit',
                   outline: 'none',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
                 rows="3"
                 placeholder="Ej: Losartan 50mg, Metformina 500mg..."
               />
@@ -554,10 +718,10 @@ const PatientRegister = () => {
             <div>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Grupo Sanguineo
               </label>
@@ -565,17 +729,21 @@ const PatientRegister = () => {
                 name="grupo_sanguineo"
                 value={formData.grupo_sanguineo}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  background: colors.neutral[0],
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  background: colors?.neutral?.[0] || '#fff',
                   outline: 'none',
-                  cursor: 'pointer'
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
               >
                 <option value="">Seleccionar grupo sanguineo</option>
                 {gruposSanguineos.map(grupo => (
@@ -589,13 +757,13 @@ const PatientRegister = () => {
         {/* Step 4: Contacto de Emergencia */}
         {currentStep === 3 && (
           <div>
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Nombre Contacto *
               </label>
@@ -604,27 +772,32 @@ const PatientRegister = () => {
                 name="contacto_emergencia_nombre"
                 value={formData.contacto_emergencia_nombre}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${errors.contacto_emergencia_nombre ? colors.error.main : colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${errors.contacto_emergencia_nombre ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = errors.contacto_emergencia_nombre ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="Nombre completo del contacto"
               />
-              {errors.contacto_emergencia_nombre && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.contacto_emergencia_nombre}</span>}
+              {errors.contacto_emergencia_nombre && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.contacto_emergencia_nombre}</span>}
             </div>
 
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Telefono Contacto *
               </label>
@@ -633,27 +806,32 @@ const PatientRegister = () => {
                 name="contacto_emergencia_telefono"
                 value={formData.contacto_emergencia_telefono}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${errors.contacto_emergencia_telefono ? colors.error.main : colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${errors.contacto_emergencia_telefono ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = errors.contacto_emergencia_telefono ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="0999999999"
               />
-              {errors.contacto_emergencia_telefono && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.contacto_emergencia_telefono}</span>}
+              {errors.contacto_emergencia_telefono && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.contacto_emergencia_telefono}</span>}
             </div>
 
             <div>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Relacion *
               </label>
@@ -661,24 +839,28 @@ const PatientRegister = () => {
                 name="contacto_emergencia_relacion"
                 value={formData.contacto_emergencia_relacion}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${errors.contacto_emergencia_relacion ? colors.error.main : colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  background: colors.neutral[0],
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${errors.contacto_emergencia_relacion ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  background: colors?.neutral?.[0] || '#fff',
                   outline: 'none',
-                  cursor: 'pointer'
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = errors.contacto_emergencia_relacion ? colors?.error?.main || '#dc2626' : colors?.neutral?.[200] || '#e5e7eb'}
               >
                 <option value="">Seleccionar relacion</option>
                 {relacionesEmergencia.map(relacion => (
                   <option key={relacion} value={relacion}>{relacion}</option>
                 ))}
               </select>
-              {errors.contacto_emergencia_relacion && <span style={{ color: colors.error.main, fontSize: typography.fontSize.xs.size }}>{errors.contacto_emergencia_relacion}</span>}
+              {errors.contacto_emergencia_relacion && <span style={{ color: colors?.error?.main || '#dc2626', fontSize: typography?.fontSize?.xs?.size || '12px', display: 'block' }}>{errors.contacto_emergencia_relacion}</span>}
             </div>
           </div>
         )}
@@ -686,13 +868,13 @@ const PatientRegister = () => {
         {/* Step 5: Aseguramiento */}
         {currentStep === 4 && (
           <div>
-            <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ marginBottom: spacing?.lg || '24px' }}>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Aseguradora Medica
               </label>
@@ -701,15 +883,20 @@ const PatientRegister = () => {
                 name="seguro_medico"
                 value={formData.seguro_medico}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="Nombre de la aseguradora"
               />
             </div>
@@ -717,10 +904,10 @@ const PatientRegister = () => {
             <div>
               <label style={{
                 display: 'block',
-                fontSize: typography.fontSize.sm.size,
-                fontWeight: typography.fontWeight.semibold,
-                color: colors.neutral[700],
-                marginBottom: spacing.xs
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                color: colors?.neutral?.[700] || '#374151',
+                marginBottom: spacing?.xs || '4px'
               }}>
                 Numero de Poliza
               </label>
@@ -729,15 +916,20 @@ const PatientRegister = () => {
                 name="numero_poliza"
                 value={formData.numero_poliza}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.neutral[200]}`,
-                  borderRadius: borderRadius.md,
-                  fontSize: typography.fontSize.sm.size,
-                  outline: 'none'
+                  padding: spacing?.md || '16px',
+                  border: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                  borderRadius: borderRadius?.md || '6px',
+                  fontSize: typography?.fontSize?.sm?.size || '14px',
+                  outline: 'none',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'text',
+                  boxSizing: 'border-box'
                 }}
-                onFocus={e => e.target.style.borderColor = config.theme.colors.primary}
+                onFocus={e => !isSubmitting && (e.target.style.borderColor = config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary)}
+                onBlur={e => e.target.style.borderColor = colors?.neutral?.[200] || '#e5e7eb'}
                 placeholder="Numero de poliza"
               />
             </div>
@@ -748,27 +940,27 @@ const PatientRegister = () => {
         {currentStep === 5 && (
           <div>
             <div style={{
-              background: colors.neutral[50],
-              borderRadius: borderRadius.lg,
-              padding: spacing.lg,
-              marginBottom: spacing.lg
+              background: colors?.neutral?.[50] || '#f9fafb',
+              borderRadius: borderRadius?.lg || '8px',
+              padding: spacing?.lg || '24px',
+              marginBottom: spacing?.lg || '24px'
             }}>
               <h3 style={{
-                fontSize: typography.fontSize.md.size,
-                fontWeight: typography.fontWeight.bold,
-                color: colors.neutral[900],
+                fontSize: typography?.fontSize?.md?.size || '16px',
+                fontWeight: typography?.fontWeight?.bold || 700,
+                color: colors?.neutral?.[900] || '#111827',
                 margin: 0,
-                marginBottom: spacing.md,
-                paddingBottom: spacing.sm,
-                borderBottom: `2px solid ${colors.neutral[200]}`
+                marginBottom: spacing?.md || '16px',
+                paddingBottom: spacing?.sm || '8px',
+                borderBottom: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
               }}>
                 Informacion Basica
               </h3>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: spacing.md,
-                fontSize: typography.fontSize.sm.size
+                gap: spacing?.md || '16px',
+                fontSize: typography?.fontSize?.sm?.size || '14px'
               }}>
                 <div><strong>Nombre:</strong> {formData.nombre} {formData.apellido}</div>
                 <div><strong>Cedula:</strong> {formData.cedula}</div>
@@ -780,19 +972,19 @@ const PatientRegister = () => {
 
             {(formData.direccion || formData.ciudad) && (
               <div style={{
-                background: colors.neutral[50],
-                borderRadius: borderRadius.lg,
-                padding: spacing.lg,
-                marginBottom: spacing.lg
+                background: colors?.neutral?.[50] || '#f9fafb',
+                borderRadius: borderRadius?.lg || '8px',
+                padding: spacing?.lg || '24px',
+                marginBottom: spacing?.lg || '24px'
               }}>
                 <h3 style={{
-                  fontSize: typography.fontSize.md.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
+                  fontSize: typography?.fontSize?.md?.size || '16px',
+                  fontWeight: typography?.fontWeight?.bold || 700,
+                  color: colors?.neutral?.[900] || '#111827',
                   margin: 0,
-                  marginBottom: spacing.md,
-                  paddingBottom: spacing.sm,
-                  borderBottom: `2px solid ${colors.neutral[200]}`
+                  marginBottom: spacing?.md || '16px',
+                  paddingBottom: spacing?.sm || '8px',
+                  borderBottom: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
                 }}>
                   Informacion Domiciliaria
                 </h3>
@@ -803,19 +995,19 @@ const PatientRegister = () => {
 
             {(formData.alergias || formData.condiciones_medicas || formData.medicamentos_actuales || formData.grupo_sanguineo) && (
               <div style={{
-                background: colors.neutral[50],
-                borderRadius: borderRadius.lg,
-                padding: spacing.lg,
-                marginBottom: spacing.lg
+                background: colors?.neutral?.[50] || '#f9fafb',
+                borderRadius: borderRadius?.lg || '8px',
+                padding: spacing?.lg || '24px',
+                marginBottom: spacing?.lg || '24px'
               }}>
                 <h3 style={{
-                  fontSize: typography.fontSize.md.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
+                  fontSize: typography?.fontSize?.md?.size || '16px',
+                  fontWeight: typography?.fontWeight?.bold || 700,
+                  color: colors?.neutral?.[900] || '#111827',
                   margin: 0,
-                  marginBottom: spacing.md,
-                  paddingBottom: spacing.sm,
-                  borderBottom: `2px solid ${colors.neutral[200]}`
+                  marginBottom: spacing?.md || '16px',
+                  paddingBottom: spacing?.sm || '8px',
+                  borderBottom: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
                 }}>
                   Informacion Medica
                 </h3>
@@ -828,19 +1020,19 @@ const PatientRegister = () => {
 
             {(formData.contacto_emergencia_nombre || formData.contacto_emergencia_telefono || formData.contacto_emergencia_relacion) && (
               <div style={{
-                background: colors.neutral[50],
-                borderRadius: borderRadius.lg,
-                padding: spacing.lg,
-                marginBottom: spacing.lg
+                background: colors?.neutral?.[50] || '#f9fafb',
+                borderRadius: borderRadius?.lg || '8px',
+                padding: spacing?.lg || '24px',
+                marginBottom: spacing?.lg || '24px'
               }}>
                 <h3 style={{
-                  fontSize: typography.fontSize.md.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
+                  fontSize: typography?.fontSize?.md?.size || '16px',
+                  fontWeight: typography?.fontWeight?.bold || 700,
+                  color: colors?.neutral?.[900] || '#111827',
                   margin: 0,
-                  marginBottom: spacing.md,
-                  paddingBottom: spacing.sm,
-                  borderBottom: `2px solid ${colors.neutral[200]}`
+                  marginBottom: spacing?.md || '16px',
+                  paddingBottom: spacing?.sm || '8px',
+                  borderBottom: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
                 }}>
                   Contacto de Emergencia
                 </h3>
@@ -852,19 +1044,19 @@ const PatientRegister = () => {
 
             {(formData.seguro_medico || formData.numero_poliza) && (
               <div style={{
-                background: colors.neutral[50],
-                borderRadius: borderRadius.lg,
-                padding: spacing.lg,
-                marginBottom: spacing.lg
+                background: colors?.neutral?.[50] || '#f9fafb',
+                borderRadius: borderRadius?.lg || '8px',
+                padding: spacing?.lg || '24px',
+                marginBottom: spacing?.lg || '24px'
               }}>
                 <h3 style={{
-                  fontSize: typography.fontSize.md.size,
-                  fontWeight: typography.fontWeight.bold,
-                  color: colors.neutral[900],
+                  fontSize: typography?.fontSize?.md?.size || '16px',
+                  fontWeight: typography?.fontWeight?.bold || 700,
+                  color: colors?.neutral?.[900] || '#111827',
                   margin: 0,
-                  marginBottom: spacing.md,
-                  paddingBottom: spacing.sm,
-                  borderBottom: `2px solid ${colors.neutral[200]}`
+                  marginBottom: spacing?.md || '16px',
+                  paddingBottom: spacing?.sm || '8px',
+                  borderBottom: `2px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
                 }}>
                   Aseguramiento
                 </h3>
@@ -879,30 +1071,32 @@ const PatientRegister = () => {
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          gap: spacing.md,
-          marginTop: spacing['2xl'],
-          paddingTop: spacing.lg,
-          borderTop: `1px solid ${colors.neutral[200]}`
+          gap: spacing?.md || '16px',
+          marginTop: spacing?.['2xl'] || '48px',
+          paddingTop: spacing?.lg || '24px',
+          borderTop: `1px solid ${colors?.neutral?.[200] || '#e5e7eb'}`
         }}>
           {currentStep > 0 && (
             <button
               onClick={pasoAnterior}
+              disabled={isSubmitting}
               style={{
-                padding: `${spacing.md} ${spacing.lg}`,
-                background: colors.neutral[100],
-                color: colors.neutral[700],
-                border: `1px solid ${colors.neutral[200]}`,
-                borderRadius: borderRadius.md,
-                fontWeight: typography.fontWeight.semibold,
-                fontSize: typography.fontSize.sm.size,
-                cursor: 'pointer',
+                padding: `${spacing?.md || '16px'} ${spacing?.lg || '24px'}`,
+                background: colors?.neutral?.[100] || '#f3f4f6',
+                color: colors?.neutral?.[700] || '#374151',
+                border: `1px solid ${colors?.neutral?.[200] || '#e5e7eb'}`,
+                borderRadius: borderRadius?.md || '6px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: '0.3s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: spacing.sm
+                gap: spacing?.sm || '8px',
+                opacity: isSubmitting ? 0.5 : 1
               }}
-              onMouseEnter={e => e.currentTarget.style.background = colors.neutral[200]}
-              onMouseLeave={e => e.currentTarget.style.background = colors.neutral[100]}
+              onMouseEnter={e => !isSubmitting && (e.currentTarget.style.background = colors?.neutral?.[200] || '#e5e7eb')}
+              onMouseLeave={e => !isSubmitting && (e.currentTarget.style.background = colors?.neutral?.[100] || '#f3f4f6')}
             >
               <MdArrowBack size={18} />
               Atras
@@ -912,23 +1106,25 @@ const PatientRegister = () => {
           {currentStep < pasos.length - 1 ? (
             <button
               onClick={siguientePaso}
+              disabled={isSubmitting}
               style={{
                 marginLeft: 'auto',
-                padding: `${spacing.md} ${spacing.lg}`,
-                background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
-                color: colors.neutral[0],
+                padding: `${spacing?.md || '16px'} ${spacing?.lg || '24px'}`,
+                background: `linear-gradient(to right, ${config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary}, ${config?.theme?.colors?.secondary || DEFAULT_CONFIG.theme.colors.secondary})`,
+                color: colors?.neutral?.[0] || '#fff',
                 border: 'none',
-                borderRadius: borderRadius.md,
-                fontWeight: typography.fontWeight.semibold,
-                fontSize: typography.fontSize.sm.size,
-                cursor: 'pointer',
+                borderRadius: borderRadius?.md || '6px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: '0.3s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: spacing.sm
+                gap: spacing?.sm || '8px',
+                opacity: isSubmitting ? 0.5 : 1
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={e => !isSubmitting && (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={e => !isSubmitting && (e.currentTarget.style.opacity = '1')}
             >
               Siguiente
               <MdArrowForward size={18} />
@@ -936,26 +1132,28 @@ const PatientRegister = () => {
           ) : (
             <button
               onClick={handleSubmit}
+              disabled={isSubmitting}
               style={{
                 marginLeft: 'auto',
-                padding: `${spacing.md} ${spacing.lg}`,
-                background: `linear-gradient(to right, ${config.theme.colors.primary}, ${config.theme.colors.secondary})`,
-                color: colors.neutral[0],
+                padding: `${spacing?.md || '16px'} ${spacing?.lg || '24px'}`,
+                background: `linear-gradient(to right, ${config?.theme?.colors?.primary || DEFAULT_CONFIG.theme.colors.primary}, ${config?.theme?.colors?.secondary || DEFAULT_CONFIG.theme.colors.secondary})`,
+                color: colors?.neutral?.[0] || '#fff',
                 border: 'none',
-                borderRadius: borderRadius.md,
-                fontWeight: typography.fontWeight.semibold,
-                fontSize: typography.fontSize.sm.size,
-                cursor: 'pointer',
+                borderRadius: borderRadius?.md || '6px',
+                fontWeight: typography?.fontWeight?.semibold || 600,
+                fontSize: typography?.fontSize?.sm?.size || '14px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: '0.3s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: spacing.sm
+                gap: spacing?.sm || '8px',
+                opacity: isSubmitting ? 0.7 : 1
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={e => !isSubmitting && (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={e => !isSubmitting && (e.currentTarget.style.opacity = '1')}
             >
-              Crear Paciente
-              <MdCheck size={18} />
+              {isSubmitting ? '⏳ Guardando...' : '✓ Crear Paciente'}
+              {!isSubmitting && <MdCheck size={18} />}
             </button>
           )}
         </div>

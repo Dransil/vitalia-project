@@ -1,28 +1,29 @@
 import api from './Api';
 
+// Obtener todas las especialidades
 export const getEspecialidades = async () => {
   try {
-    const response = await api.get('/especialidades');
+    const response = await api.get('/especialidad');
     
-    console.log('Respuesta del backend:', response);
+    console.log('Respuesta completa:', response);
     
-    let especialidadesArray = [];
-    
-    if (response.data && Array.isArray(response.data)) {
-      especialidadesArray = response.data;
-    } else if (Array.isArray(response)) {
-      especialidadesArray = response;
+    // Tu backend devuelve: { ok: true, msg: "...", data: [...] }
+    if (response && response.ok === true && Array.isArray(response.data)) {
+      return {
+        ok: true,
+        msg: response.msg || 'Especialidades cargadas',
+        data: response.data,
+      };
     }
-
-    console.log('Especialidades procesadas:', especialidadesArray);
     
+    // Si la respuesta no tiene la estructura esperada
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Especialidades cargadas',
-      data: especialidadesArray || [],
+      ok: false,
+      msg: response?.msg || 'Formato de datos inválido',
+      data: [],
     };
   } catch (error) {
-    console.error('Error al obtener especialidades:', error);
+    console.error('Error en getEspecialidades:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al cargar las especialidades',
@@ -32,35 +33,25 @@ export const getEspecialidades = async () => {
   }
 };
 
-
+// Buscar especialidades por nombre
 export const searchEspecialidades = async (searchName = '') => {
   try {
-    const response = await api.get('/especialidades');
+    const response = await api.get('/especialidad');
     
-    let especialidadesArray = [];
-    if (response.data && Array.isArray(response.data)) {
-      especialidadesArray = response.data;
-    } else if (Array.isArray(response)) {
-      especialidadesArray = response;
-    } else {
+    if (!response || response.ok !== true || !Array.isArray(response.data)) {
       return { ok: false, msg: 'Formato de datos inválido', data: [] };
     }
-
-    if (!Array.isArray(especialidadesArray)) {
-      console.warn('especialidadesArray no es un array:', especialidadesArray);
-      return { ok: false, msg: 'Formato de datos inválido', data: [] };
-    }
-
-    let especialidadesFiltradas = especialidadesArray;
-
+    
+    let especialidadesFiltradas = response.data;
+    
     if (searchName) {
-      especialidadesFiltradas = especialidadesFiltradas.filter(especialidad => {
+      especialidadesFiltradas = response.data.filter(especialidad => {
         if (!especialidad) return false;
         const nombre = (especialidad.nombre || '').toLowerCase();
         return nombre.includes(searchName.toLowerCase());
       });
     }
-
+    
     return {
       ok: true,
       data: especialidadesFiltradas,
@@ -76,34 +67,38 @@ export const searchEspecialidades = async (searchName = '') => {
   }
 };
 
-
+// Obtener especialidad por ID
 export const getEspecialidadById = async (id) => {
   try {
-    const response = await api.get(`/especialidades/${id}`);
+    const response = await api.get(`/especialidad/${id}`);
     
-    if (response.data) {
+    if (response && response.ok === true) {
       return { ok: true, data: response.data };
     }
-
-    return { ok: false, msg: 'Especialidad no encontrada', data: null };
+    
+    return { ok: false, msg: response?.msg || 'Especialidad no encontrada', data: null };
   } catch (error) {
     console.error('Error al obtener especialidad:', error);
-    return { ok: false, msg: 'Error al cargar la especialidad', error: error.message, data: null };
+    return { 
+      ok: false, 
+      msg: error.data?.msg || 'Error al cargar la especialidad', 
+      error: error.message, 
+      data: null 
+    };
   }
 };
 
-
+// Crear especialidad
 export const createEspecialidad = async (especialidadData) => {
   try {
     console.log('📤 Enviando especialidad:', especialidadData);
-    const response = await api.post('/especialidades', especialidadData);
-    
+    const response = await api.post('/especialidad', especialidadData);
     console.log('✅ Respuesta:', response);
     
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Especialidad creada exitosamente',
-      data: response.data,
+      ok: response?.ok !== false,
+      msg: response?.msg || 'Especialidad creada exitosamente',
+      data: response?.data,
     };
   } catch (error) {
     console.error('Error al crear especialidad:', error);
@@ -116,14 +111,14 @@ export const createEspecialidad = async (especialidadData) => {
   }
 };
 
-
+// Actualizar especialidad
 export const updateEspecialidad = async (id, especialidadData) => {
   try {
-    const response = await api.put(`/especialidades/${id}`, especialidadData);
+    const response = await api.put(`/especialidad/${id}`, especialidadData);
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Especialidad actualizada exitosamente',
-      data: response.data,
+      ok: response?.ok !== false,
+      msg: response?.msg || 'Especialidad actualizada exitosamente',
+      data: response?.data,
     };
   } catch (error) {
     console.error('Error al actualizar especialidad:', error);
@@ -136,13 +131,30 @@ export const updateEspecialidad = async (id, especialidadData) => {
   }
 };
 
+// Cambiar estado de especialidad
 export const cambiarEstadoEspecialidad = async (id) => {
   try {
-    const response = await api.patch(`/especialidades/estado/${id}`);
+    // Obtener la especialidad actual
+    const getResponse = await api.get(`/especialidad/${id}`);
+    
+    if (!getResponse || getResponse.ok !== true || !getResponse.data) {
+      return { ok: false, msg: 'Especialidad no encontrada' };
+    }
+    
+    const especialidadActual = getResponse.data;
+    const nuevoEstado = especialidadActual.estado === 'activa' ? 'inactiva' : 'activa';
+    
+    // Actualizar el estado
+    const updateResponse = await api.put(`/especialidad/${id}`, {
+      nombre: especialidadActual.nombre,
+      descripcion: especialidadActual.descripcion,
+      estado: nuevoEstado
+    });
+    
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Estado actualizado',
-      estado: response.estado,
+      ok: updateResponse?.ok !== false,
+      msg: updateResponse?.msg || `Especialidad ${nuevoEstado === 'activa' ? 'activada' : 'desactivada'} exitosamente`,
+      estado: nuevoEstado,
     };
   } catch (error) {
     console.error('Error al cambiar estado:', error);
@@ -154,15 +166,16 @@ export const cambiarEstadoEspecialidad = async (id) => {
   }
 };
 
+// Eliminar especialidad
 export const deleteEspecialidad = async (id) => {
   try {
-    const response = await api.delete(`/especialidades/${id}`);
+    const response = await api.delete(`/especialidad/${id}`);
     return {
-      ok: response.ok !== false,
-      msg: response.msg || 'Especialidad eliminada exitosamente',
+      ok: response?.ok !== false,
+      msg: response?.msg || 'Especialidad eliminada exitosamente',
     };
   } catch (error) {
-    console.warn('DELETE no disponible, intentando cambiar estado...');
+    console.warn('DELETE no disponible, cambiando estado...');
     return await cambiarEstadoEspecialidad(id);
   }
 };

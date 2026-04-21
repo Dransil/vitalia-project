@@ -5,7 +5,7 @@ export const getConsultorios = async () => {
   try {
     const response = await api.get('/consultorio');
     
-    console.log('🔍 Respuesta del backend:', response);
+    console.log('Respuesta del backend:', response);
     
     let consultoriosArray = [];
     
@@ -15,7 +15,7 @@ export const getConsultorios = async () => {
       consultoriosArray = response;
     }
 
-    console.log('✅ Consultorios procesados:', consultoriosArray);
+    console.log('Consultorios procesados:', consultoriosArray);
     
     return {
       ok: response.ok !== false,
@@ -23,7 +23,7 @@ export const getConsultorios = async () => {
       data: consultoriosArray || [],
     };
   } catch (error) {
-    console.error('❌ Error al obtener consultorios:', error);
+    console.error('Error al obtener consultorios:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al cargar los consultorios',
@@ -104,10 +104,10 @@ export const getConsultorioById = async (id) => {
 
 export const createConsultorio = async (consultorioData) => {
   try {
-    console.log('📤 Enviando consultorio:', consultorioData);
+    console.log('Enviando consultorio:', consultorioData);
     const response = await api.post('/consultorio', consultorioData);
     
-    console.log('✅ Respuesta:', response);
+    console.log('Respuesta:', response);
     
     return {
       ok: response.ok !== false,
@@ -146,7 +146,7 @@ export const updateConsultorio = async (id, consultorioData) => {
 
 export const cambiarEstadoConsultorio = async (id) => {
   try {
-    const response = await api.patch(`/consultorio/estado/${id}`);
+    const response = await api.patch(`/consultorio/${id}`);
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Estado actualizado',

@@ -5,7 +5,7 @@ export const getPacientes = async () => {
   try {
     const response = await api.get('/pacientes');
     
-    console.log('🔍 Respuesta del backend:', response);
+    console.log('Respuesta del backend:', response);
     
     let pacientesArray = [];
     
@@ -15,15 +15,15 @@ export const getPacientes = async () => {
       pacientesArray = response;
     }
 
-    console.log('✅ Pacientes procesados:', pacientesArray);
-    
+    console.log('Pacientes procesados:', pacientesArray);
+  
     return {
       ok: response.ok !== false,
       msg: response.msg || 'Pacientes cargados',
       data: pacientesArray || [],
     };
   } catch (error) {
-    console.error('❌ Error al obtener pacientes:', error);
+    console.error('Error al obtener pacientes:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al cargar los pacientes',
@@ -117,7 +117,7 @@ export const createPaciente = async (pacienteData) => {
       data: response.data,
     };
   } catch (error) {
-    console.error('❌ Error al crear paciente:', error);
+    console.error('Error al crear paciente:', error);
     return {
       ok: false,
       msg: error.data?.msg || 'Error al crear el paciente',

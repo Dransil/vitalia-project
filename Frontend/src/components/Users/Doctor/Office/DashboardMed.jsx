@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../../Config/ThemeContext';
-import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCheckCircle, MdLocationOn, MdPhone, MdEmail } from 'react-icons/md';
+import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCheckCircle, MdLocationOn, MdPhone, MdEmail, MdBlock, MdCheck } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import * as consultoriosService from '../../../../Services/Consultorioservice';
 
@@ -80,21 +80,27 @@ const Consultorios_Dashboard = () => {
   };
 
   const handleCreateConsultorio = () => {
-    navigate('/consultorio/crear');
+    navigate('/Create_Office');
   };
 
   const handleEditConsultorio = (id) => {
     navigate(`/consultorio/edit/${id}`);
   };
 
-  const handleDeleteConsultorio = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este consultorio?')) {
-      const result = await consultoriosService.deleteConsultorio(id);
+  // Nueva función para activar/desactivar consultorio
+  const handleToggleEstado = async (id, estadoActual) => {
+    const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+    const mensaje = nuevoEstado === 'activo' 
+      ? '¿Estás seguro de que deseas activar este consultorio?' 
+      : '¿Estás seguro de que deseas desactivar este consultorio?';
+    
+    if (window.confirm(mensaje)) {
+      const result = await consultoriosService.cambiarEstadoConsultorio(id);
       if (result.ok) {
-        alert(result.msg || 'Consultorio eliminado');
-        loadConsultorios();
+        alert(result.msg || `Consultorio ${nuevoEstado === 'activo' ? 'activado' : 'desactivado'} correctamente`);
+        loadConsultorios(); // Recargar la lista
       } else {
-        alert(result.msg || 'Error al eliminar el consultorio');
+        alert(result.msg || 'Error al cambiar el estado del consultorio');
       }
     }
   };
@@ -388,6 +394,7 @@ const Consultorios_Dashboard = () => {
                       padding: spacing.lg,
                       transition: '0.3s',
                       cursor: 'pointer',
+                      opacity: sanitized.estado === 'activo' ? 1 : 0.85,
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.background = colors.neutral[100];
@@ -608,11 +615,12 @@ const Consultorios_Dashboard = () => {
                         Editar
                       </button>
 
+                      {/* Botón Activar/Desactivar - Reemplaza al botón Eliminar */}
                       <button
-                        onClick={() => handleDeleteConsultorio(sanitized.id)}
+                        onClick={() => handleToggleEstado(sanitized.id, sanitized.estado)}
                         style={{
                           padding: `${spacing.sm} ${spacing.lg}`,
-                          background: colors.error.main,
+                          background: sanitized.estado === 'activo' ? colors.error.main : colors.success.main,
                           color: colors.neutral[0],
                           border: 'none',
                           borderRadius: borderRadius.md,
@@ -627,8 +635,17 @@ const Consultorios_Dashboard = () => {
                         onMouseEnter={e => e.target.style.opacity = '0.8'}
                         onMouseLeave={e => e.target.style.opacity = '1'}
                       >
-                        <MdDelete size={16} />
-                        Eliminar
+                        {sanitized.estado === 'activo' ? (
+                          <>
+                            <MdBlock size={16} />
+                            Desactivar
+                          </>
+                        ) : (
+                          <>
+                            <MdCheck size={16} />
+                            Activar
+                          </>
+                        )}
                       </button>
                     </div>
 

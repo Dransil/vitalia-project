@@ -7,7 +7,7 @@ const Settings = () => {
   const { config, updateThemeConfig, spacing, colors, typography, shadows, borderRadius } = useTheme();
   const [localConfig, setLocalConfig] = useState(config);
   const [saved, setSaved] = useState(false);
-  const [customizeEnabled, setCustomizeEnabled] = useState(true);
+  const [customizeEnabled, setCustomizeEnabled] = useState(false);
 
   const handleColorChange = (category, value) => {
     if (!customizeEnabled) return;

@@ -13,11 +13,13 @@ import PatientRegister from './components/Users/Patient/RegisterPct.jsx';
 import Specialty_Dashboard from './components/Users/Doctor/Speciality/Especialidad.jsx';
 import Schedule_Dashboard from './components/Schedule/Schedule_Dashboard.jsx';
 import Consultorios_Dashboard from './components/Users/Doctor/Office/DashboardMed.jsx';
+import CreateConsultorio from './components/Users/Doctor/Office/RegisterOfc.jsx';
+import Speciality_create from './components/Users/Doctor/Speciality/Speciality_Create.jsx';
 
-// 👈 Layout con Sidebar para rutas protegidas
 const ProtectedLayout = () => {
-  const { config, colors } = useTheme();
-  const backgroundColor = config.theme.background || colors.primary[50];
+  const themeContext = useTheme();
+  const colors = themeContext?.colors || { primary: { 50: '#f0f9ff' } };
+  const backgroundColor = colors.primary?.[50] || '#f0f9ff';
 
   return (
     <div style={{ 
@@ -56,6 +58,8 @@ function App() {
             <Route path='/Specialty_Dashboard' element={<Specialty_Dashboard/>} />
             <Route path='/Schedule' element={<Schedule_Dashboard/>}/>
             <Route path='/Office_Dashboard' element={<Consultorios_Dashboard/>}/>
+            <Route path='/Create_Office' element={<CreateConsultorio/>}/>
+            <Route path="/Speciality_create" element={<Speciality_create/>} />
           </Route>
         </Routes>
       </ThemeProvider>
