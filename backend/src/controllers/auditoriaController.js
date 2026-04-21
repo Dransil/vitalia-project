@@ -1,0 +1,1 @@
+const { Auditoria, Usuario } = require('../models/associations');
