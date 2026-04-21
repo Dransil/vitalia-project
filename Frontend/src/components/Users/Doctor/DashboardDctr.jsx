@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
-import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail } from 'react-icons/md';
+import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail, MdBlock, MdCheck } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import * as doctoresService from '../../../Services/Doctoresservice';
 
@@ -25,7 +25,7 @@ const Doctor_Dashboard = () => {
     setIsLoading(true);
     setHasError(false);
     const result = await doctoresService.getDoctores();
-    
+
     if (result.ok) {
       // Validar que sea un array
       const datosValidos = Array.isArray(result.data) ? result.data : [];
@@ -52,7 +52,7 @@ const Doctor_Dashboard = () => {
     setIsLoading(true);
     setHasError(false);
     const result = await doctoresService.searchDoctores(searchName, searchEmail, searchPhone);
-    
+
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
       setDoctores(datosValidos);
@@ -83,9 +83,9 @@ const Doctor_Dashboard = () => {
   };
 
   const handleEditDoctor = (id) => {
-    navigate(`/doctor/edit/${id}`);
+    navigate(`/Doctor_Mod/${id}`);
   };
-
+  //funcion por el momento no usada, solo para un superadministrador
   const handleDeleteDoctor = async (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este doctor?')) {
       const result = await doctoresService.cambiarEstadoDoctor(id);
@@ -97,6 +97,24 @@ const Doctor_Dashboard = () => {
       }
     }
   };
+  //funcion para desactivar y activar doctor 
+  const handleToggleEstado = async (id, estadoActual) => {
+    const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+    const mensaje = nuevoEstado === 'activo'
+      ? '¿Estás seguro de que deseas activar?'
+      : '¿Estás seguro de que deseas desactivar?';
+
+    if (window.confirm(mensaje)) {
+      const result = await doctoresService.cambiarEstadoDoctor(id);
+      if (result.ok) {
+        alert(result.msg || `Doctor ${nuevoEstado === 'activo' ? 'activado' : 'desactivado'} correctamente`);
+        loadDoctores(); // Recargar la lista
+      } else {
+        alert(result.msg || 'Error al cambiar el estado del usuario');
+      }
+    }
+  };
+
 
   // Función para sanitizar todos los campos
   const sanitizeDoctor = (doctor) => {
@@ -607,7 +625,7 @@ const Doctor_Dashboard = () => {
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
-                            padding: `${spacing.sm/2} ${spacing.sm}`,
+                            padding: `${spacing.sm / 2} ${spacing.sm}`,
                             background: config.theme.colors.primary,
                             color: colors.neutral[0],
                             borderRadius: borderRadius.sm,
@@ -619,7 +637,7 @@ const Doctor_Dashboard = () => {
                         <span
                           style={{
                             fontSize: typography.fontSize.xs.size,
-                            padding: `${spacing.sm/2} ${spacing.sm}`,
+                            padding: `${spacing.sm / 2} ${spacing.sm}`,
                             background: sanitized.estado === 'activo' ? colors.success.light : colors.error.light,
                             color: sanitized.estado === 'activo' ? colors.success.dark : colors.error.dark,
                             borderRadius: borderRadius.sm,
@@ -660,7 +678,7 @@ const Doctor_Dashboard = () => {
                         <MdEdit size={16} />
                         Editar
                       </button>
-
+                      {/*
                       <button
                         onClick={() => handleDeleteDoctor(sanitized.id)}
                         style={{
@@ -681,6 +699,37 @@ const Doctor_Dashboard = () => {
                       >
                         <MdDelete size={16} />
                         Eliminar
+                      </button>*/}
+                      <button
+                        onClick={() => handleToggleEstado(sanitized.id, sanitized.estado)}
+                        style={{
+                          padding: `${spacing.sm} ${spacing.lg}`,
+                          background: sanitized.estado === 'activo' ? colors.error.main : colors.success.main,
+                          color: colors.neutral[0],
+                          border: 'none',
+                          borderRadius: borderRadius.md,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: spacing.sm,
+                          fontSize: typography.fontSize.sm.size,
+                          fontWeight: 'bold',
+                          transition: '0.3s',
+                        }}
+                        onMouseEnter={e => e.target.style.opacity = '0.8'}
+                        onMouseLeave={e => e.target.style.opacity = '1'}
+                      >
+                        {sanitized.estado === 'activo' ? (
+                          <>
+                            <MdBlock size={16} />
+                            Desactivar
+                          </>
+                        ) : (
+                          <>
+                            <MdCheck size={16} />
+                            Activar
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

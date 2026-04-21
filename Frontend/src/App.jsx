@@ -15,6 +15,13 @@ import Schedule_Dashboard from './components/Schedule/Schedule_Dashboard.jsx';
 import Consultorios_Dashboard from './components/Users/Doctor/Office/DashboardMed.jsx';
 import CreateConsultorio from './components/Users/Doctor/Office/RegisterOfc.jsx';
 import Speciality_create from './components/Users/Doctor/Speciality/Speciality_Create.jsx';
+import History_client from './components/Users/Patient/PatientHistory.jsx';
+import DoctorMd from './components/Users/Doctor/DoctorMd.jsx';
+import DoctorDashboardPage from './components/pages/DoctorDashboardPage/DoctorDashboardPage.jsx';
+import PatientDashboardPage from './components/pages/PatientDashboardPage/PatientDashboardPage.jsx';
+import PacienteMd from './components/Users/Patient/PatientMod.jsx';
+import CitasDashboard from './components/Users/Doctor/Date/Date.jsx';
+import DoctorEditPage from './components/pages/DoctorEditPage/DoctorEditPage.jsx';
 
 const ProtectedLayout = () => {
   const themeContext = useTheme();
@@ -50,16 +57,20 @@ function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<MainDashboard />} />
             <Route path="/Settings" element={<Settings />} />            
-            <Route path="/Patient_Dashboard" element={<DashboardPct />} />
-            <Route path="/Doctor_Dashboard" element={<Doctor_Dashboard />} />
+            <Route path="/Patient_Dashboard" element={<PatientDashboardPage />} />
+            <Route path="/Doctor_Dashboard" element={<DoctorDashboardPage />} />
             <Route path="/Doctor_Register" element={<RegisterDct />} />
             <Route path="/specialty" element={<Specialty_Dashboard/>} />         
             <Route path='/Patient_Register' element={<PatientRegister />} />
+            <Route path='/Patient_Mod/:id' element={<PacienteMd/>}/>
             <Route path='/Specialty_Dashboard' element={<Specialty_Dashboard/>} />
             <Route path='/Schedule' element={<Schedule_Dashboard/>}/>
             <Route path='/Office_Dashboard' element={<Consultorios_Dashboard/>}/>
             <Route path='/Create_Office' element={<CreateConsultorio/>}/>
             <Route path="/Speciality_create" element={<Speciality_create/>} />
+            <Route path="/History_client/:id" element={<History_client />} />
+            <Route path='/Doctor_Mod/:id' element={<DoctorEditPage/>}/>
+            <Route path='/Date_Dashboard' element={<CitasDashboard/>}/>
           </Route>
         </Routes>
       </ThemeProvider>

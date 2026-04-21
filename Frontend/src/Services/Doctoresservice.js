@@ -1,32 +1,21 @@
-// doctorService.js - CORREGIDO
 import api from './Api';
 
-/**
- * Obtener lista de todos los doctores (usuarios con rol médico/dentista)
- * GET /vitalia/usuarios
- */
 export const getDoctores = async () => {
   try {
-    const response = await api.get('/usuarios');
-    
-    // El backend puede devolver diferentes estructuras
+    const response = await api.get('/usuarios'); // Cambiado de '/usuario' a '/usuarios'
+
     let doctoresArray = [];
-    
-    // Caso 1: { ok: true, data: [...] }
+
     if (response.data && Array.isArray(response.data)) {
       doctoresArray = response.data;
     }
-    // Caso 2: { usuarios: [...] }
-    else if (response.usuarios && Array.isArray(response.usuarios)) {
-      doctoresArray = response.usuarios;
+    else if (response.usuario && Array.isArray(response.usuario)) {
+      doctoresArray = response.usuario;
     }
-    // Caso 3: directamente un array
     else if (Array.isArray(response)) {
       doctoresArray = response;
     }
-    // Caso 4: { ok: true, msg: "...", data: null } pero con usuarios en otra parte
     else if (response.data === null && response.msg) {
-      // Solo mensaje, sin datos
       return {
         ok: true,
         msg: response.msg || 'No hay doctores registrados',
@@ -34,14 +23,12 @@ export const getDoctores = async () => {
       };
     }
 
-    // Filtrar solo usuarios con rol médico o dentista (si aplica)
-    // Tu tabla usuario tiene roles: 'admin', 'dentista', 'medico'
-    const doctoresFiltrados = doctoresArray.filter(usuario => 
+    const doctoresFiltrados = doctoresArray.filter(usuario =>
       usuario && (usuario.rol === 'dentista' || usuario.rol === 'medico' || usuario.rol === 'admin')
     );
 
     console.log('Doctores cargados:', doctoresFiltrados.length);
-    
+
     return {
       ok: true,
       msg: 'Doctores cargados exitosamente',
@@ -57,15 +44,10 @@ export const getDoctores = async () => {
   }
 };
 
-/**
- * Buscar doctores por nombre, email o teléfono
- */
-export const searchDoctores = async (searchParams = {}) => {
-  const { nombre = '', email = '', telefono = '' } = searchParams;
-  
+export const searchDoctores = async (nombre = '', email = '', telefono = '') => {
   try {
     const result = await getDoctores();
-    
+
     if (!result.ok || !result.data.length) {
       return result;
     }
@@ -108,17 +90,12 @@ export const searchDoctores = async (searchParams = {}) => {
   }
 };
 
-/**
- * Obtener un doctor específico por ID
- */
 export const getDoctorById = async (id) => {
   try {
-    // Intentar obtener directamente por ID si el backend lo soporta
-    const response = await api.get(`/usuarios/${id}`);
-    
-    // El backend puede devolver diferentes estructuras
+    const response = await api.get(`/usuarios/${id}`); // Cambiado de '/usuario' a '/usuarios'
+
     let doctor = null;
-    
+
     if (response.data) {
       doctor = response.data;
     } else if (response.usuario) {
@@ -126,42 +103,36 @@ export const getDoctorById = async (id) => {
     } else if (response.id_usuario || response.id) {
       doctor = response;
     }
-    
+
     if (!doctor) {
       return { ok: false, msg: 'Doctor no encontrado', data: null };
     }
 
     return { ok: true, msg: 'Doctor encontrado', data: doctor };
   } catch (error) {
-    // Si falla la búsqueda directa, buscar en la lista completa
     console.log(`Buscando doctor ${id} en lista completa...`);
     const result = await getDoctores();
-    
+
     if (result.ok && result.data.length) {
       const doctor = result.data.find(d => d.id_usuario === id || d.id === id);
       if (doctor) {
         return { ok: true, msg: 'Doctor encontrado', data: doctor };
       }
     }
-    
-    return { 
-      ok: false, 
-      msg: error.data?.msg || 'Error al cargar el doctor', 
-      data: null 
+
+    return {
+      ok: false,
+      msg: error.data?.msg || 'Error al cargar el doctor',
+      data: null
     };
   }
 };
 
-/**
- * Crear nuevo doctor
- * POST /vitalia/usuarios
- */
 export const createDoctor = async (doctorData) => {
   try {
-    // Validar datos requeridos según tu tabla `usuario`
     const requiredFields = ['nombre', 'apellido', 'email', 'cedula', 'contraseña_hash'];
     const missingFields = requiredFields.filter(field => !doctorData[field]);
-    
+
     if (missingFields.length > 0) {
       return {
         ok: false,
@@ -172,12 +143,12 @@ export const createDoctor = async (doctorData) => {
 
     const response = await api.post('/usuarios', {
       ...doctorData,
-      rol: doctorData.rol || 'dentista', // por defecto dentista
+      rol: doctorData.rol || 'doctor',
       estado: doctorData.estado || 'activo',
-      horario_id: doctorData.horario_id || null,
-      dias_atencion: doctorData.dias_atencion || 'Lun,Mar,Mié,Jue,Vie'
+      id_horario: doctorData.id_horario || null,        // ← nombre correcto
+      dias_atencion: doctorData.dias_atencion || 'Lun,Mar,Mie,Jue,Vie'
     });
-    
+
     return {
       ok: true,
       msg: response.msg || 'Doctor creado exitosamente',
@@ -193,13 +164,9 @@ export const createDoctor = async (doctorData) => {
   }
 };
 
-/**
- * Actualizar doctor
- * PUT /vitalia/usuarios/:id
- */
 export const updateDoctor = async (id, doctorData) => {
   try {
-    const response = await api.put(`/usuarios/${id}`, doctorData);
+    const response = await api.put(`/usuarios/${id}`, doctorData); // Cambiado de '/usuario' a '/usuarios'
     return {
       ok: true,
       msg: response.msg || 'Doctor actualizado exitosamente',
@@ -215,61 +182,49 @@ export const updateDoctor = async (id, doctorData) => {
   }
 };
 
-/**
- * Cambiar estado del doctor (activo/inactivo)
- * Usa PATCH /vitalia/usuarios/:id (actualización parcial)
- */
-// doctorService.js - Cambiar la función cambiarEstadoDoctor
-export const cambiarEstadoDoctor = async (id, nuevoEstado = null) => {
+// CORREGIDO: La ruta debe coincidir con el backend
+export const cambiarEstadoDoctor = async (id) => {
   try {
-    // Tu backend usa PATCH /estado/:id
-    const response = await api.patch(`/estado/${id}`); // ← Cambiado: agregar /estado/
-    
+    // El backend tiene la ruta PATCH /vitalia/usuarios/estado/:id
+    // api.js ya tiene la base URL configurada, solo necesitamos la ruta relativa
+    const response = await api.patch(`/usuarios/estado/${id}`);
+
     return {
       ok: response.ok !== false,
-      msg: response.msg || 'Estado actualizado',
+      msg: response.msg || 'Estado actualizado correctamente',
       estado: response.estado,
     };
   } catch (error) {
     console.error('Error al cambiar estado:', error);
     return {
       ok: false,
-      msg: error.data?.msg || 'Error al cambiar el estado',
+      msg: error.data?.msg || error.message || 'Error al cambiar el estado',
       error: error.message,
     };
   }
 };
 
-/**
- * Eliminar doctor (soft delete - cambia estado a inactivo)
- */
 export const deleteDoctor = async (id) => {
   try {
-    // Intentar DELETE primero (si el backend lo soporta como soft delete)
-    const response = await api.delete(`/usuarios/${id}`);
+    const response = await api.delete(`/usuarios/${id}`); // Cambiado de '/usuario' a '/usuarios'
     return {
       ok: true,
       msg: response.msg || 'Doctor eliminado exitosamente',
     };
   } catch (error) {
-    // Si DELETE no está implementado o falla, usar cambio de estado
     console.warn('DELETE no disponible, usando cambio de estado...');
     return await cambiarEstadoDoctor(id);
   }
 };
 
-/**
- * Asignar especialidad y consultorio a un doctor (usar tabla pivote)
- * POST /vitalia/usuarios/:id/asignaciones
- */
 export const asignarEspecialidadConsultorio = async (idUsuario, idConsultorio, idEspecialidad) => {
   try {
-    const response = await api.post('/usuarios/asignaciones', {
+    const response = await api.post('/usuarios/asignaciones', { // Cambiado de '/usuario' a '/usuarios'
       id_usuario: idUsuario,
       id_consultorio: idConsultorio,
       id_especialidad: idEspecialidad
     });
-    
+
     return {
       ok: true,
       msg: response.msg || 'Asignación realizada exitosamente',
@@ -284,14 +239,10 @@ export const asignarEspecialidadConsultorio = async (idUsuario, idConsultorio, i
   }
 };
 
-/**
- * Obtener especialidades y consultorios de un doctor
- * GET /vitalia/usuarios/:id/asignaciones
- */
 export const getDoctorAsignaciones = async (idUsuario) => {
   try {
-    const response = await api.get(`/usuarios/${idUsuario}/asignaciones`);
-    
+    const response = await api.get(`/usuarios/${idUsuario}/asignaciones`); // Cambiado de '/usuario' a '/usuarios'
+
     return {
       ok: true,
       msg: response.msg || 'Asignaciones obtenidas',
