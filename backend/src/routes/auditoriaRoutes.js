@@ -4,5 +4,6 @@ const auditoriaController = require('../controllers/auditoriaController');
 
 // Ruta: /vitalia/administracion/auditoria
 router.get('/', auditoriaController.obtenerAuditorias);
+router.get('/:id', auditoriaController.obtenerAuditorias);
 
 module.exports = router;

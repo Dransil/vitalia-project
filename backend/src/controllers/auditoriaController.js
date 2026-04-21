@@ -19,3 +19,24 @@ exports.obtenerAuditorias = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
     }
 };
+
+// Obtener auditoria por ID
+exports.obtenerAuditoriaPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const auditoria = await Auditoria.findByPk(id, {
+            include: [{ model: Usuario, attributes: ['nombre', 'apellido', 'email'] }]
+        });
+
+        if (!auditoria) {
+            return res.status(404).json({ ok: false, msg: 'Registro de auditoría no encontrado' });
+        }
+
+        res.json({ ok: true, msg: 'Auditoría obtenida con éxito', data: auditoria });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener auditoría', error: error.message });
+    }
+};
