@@ -62,3 +62,26 @@ exports.obtenerAuditoriasPorUsuario = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
     }
 };
+
+// Obtener auditorias por tabla
+exports.obtenerAuditoriasPorTabla = async (req, res) => {
+    try {
+        const { tabla } = req.params;
+
+        const auditorias = await Auditoria.findAll({
+            where: { tabla_afectada: tabla },
+            include: [{ model: Usuario, attributes: ['nombre', 'apellido'] }],
+            order: [['timestamp', 'DESC']]
+        });
+
+        if (auditorias.length === 0) {
+            return res.status(404).json({ ok: false, msg: `No se encontraron auditorías para la tabla '${tabla}'` });
+        }
+
+        res.json({ ok: true, msg: 'Auditorías obtenidas con éxito', data: auditorias });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
+    }
+};
