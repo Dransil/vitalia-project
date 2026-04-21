@@ -40,3 +40,25 @@ exports.obtenerAuditoriaPorId = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener auditoría', error: error.message });
     }
 };
+
+// Obtener auditorias por usuario
+exports.obtenerAuditoriasPorUsuario = async (req, res) => {
+    try {
+        const { id_usuario } = req.params;
+
+        const auditorias = await Auditoria.findAll({
+            where: { id_usuario },
+            order: [['timestamp', 'DESC']]
+        });
+
+        if (auditorias.length === 0) {
+            return res.status(404).json({ ok: false, msg: 'No se encontraron auditorías para este usuario' });
+        }
+
+        res.json({ ok: true, msg: 'Auditorías obtenidas con éxito', data: auditorias });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
+    }
+};
