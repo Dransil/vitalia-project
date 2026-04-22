@@ -1,12 +1,13 @@
+// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { ThemeProvider, useTheme } from './Config/ThemeContext';
-import Sidebar from './components/OptionsNav/Sidebar.jsx';
+import Sidebar from './components/organisms/Sidebar/Sidebar.jsx';
+
 import Settings from './components/Settings.jsx';
 import Login from './components/Auth/Login.jsx';
 import MainDashboard from './components/Main/MainDashboard.jsx';
 import RegisterLg from './components/Auth/Registerlg.jsx';
-import Doctor_Dashboard from './components/Users/Doctor/DashboardDctr.jsx';
 import RegisterDct from './components/Users/Doctor/RegisterDctr.jsx';
 import DashboardPct from './components/Users/Patient/DashboardPct.jsx';
 import PatientRegister from './components/Users/Patient/RegisterPct.jsx';
@@ -22,17 +23,37 @@ import PatientDashboardPage from './components/pages/PatientDashboardPage/Patien
 import PacienteMd from './components/Users/Patient/PatientMod.jsx';
 import CitasDashboard from './components/Users/Doctor/Date/Date.jsx';
 import DoctorEditPage from './components/pages/DoctorEditPage/DoctorEditPage.jsx';
+import DoctorRegisterPage from './components/pages/DoctorRegisterPage/DoctorRegisterPage.jsx';
+import SettingsPage from './components/pages/SettingsPage/SettingsPage.jsx';
+
+// Función para convertir hex a rgba con opacidad
+const hexToRgba = (hex, opacity) => {
+  if (!hex) return `rgba(240, 249, 255, ${opacity})`; // Color por defecto #f0f9ff
+  const hexClean = hex.replace('#', '');
+  const r = parseInt(hexClean.substring(0, 2), 16);
+  const g = parseInt(hexClean.substring(2, 4), 16);
+  const b = parseInt(hexClean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 
 const ProtectedLayout = () => {
   const themeContext = useTheme();
-  const colors = themeContext?.colors || { primary: { 50: '#f0f9ff' } };
-  const backgroundColor = colors.primary?.[50] || '#f0f9ff';
+  
+  // Obtener colores personalizados de la configuración
+  const config = themeContext?.config || {};
+  const primaryColor = config?.theme?.colors?.primary || '#0ea5e9';
+  const backgroundColor = config?.theme?.background || '#f0f9ff';
+  
+  // Si no hay color de fondo personalizado, usar una versión muy clara del color primario
+  const finalBackgroundColor = backgroundColor !== '#f0f9ff' 
+    ? backgroundColor 
+    : hexToRgba(primaryColor, 0.05);
 
   return (
     <div style={{ 
       display: 'flex', 
       minHeight: '100vh', 
-      background: backgroundColor,
+      background: finalBackgroundColor,
       transition: 'background 0.3s ease'
     }}>
       <Sidebar />
@@ -56,10 +77,10 @@ function App() {
           {/* Todas las rutas protegidas heredan el Layout con Sidebar */}
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<MainDashboard />} />
-            <Route path="/Settings" element={<Settings />} />            
+            <Route path="/Settings" element={<SettingsPage />} />            
             <Route path="/Patient_Dashboard" element={<PatientDashboardPage />} />
             <Route path="/Doctor_Dashboard" element={<DoctorDashboardPage />} />
-            <Route path="/Doctor_Register" element={<RegisterDct />} />
+            <Route path="/Doctor_Register" element={<DoctorRegisterPage />} />
             <Route path="/specialty" element={<Specialty_Dashboard/>} />         
             <Route path='/Patient_Register' element={<PatientRegister />} />
             <Route path='/Patient_Mod/:id' element={<PacienteMd/>}/>

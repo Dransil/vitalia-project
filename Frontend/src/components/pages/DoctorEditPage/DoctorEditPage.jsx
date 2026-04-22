@@ -1,6 +1,7 @@
 // src/components/pages/DoctorEditPage/DoctorEditPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { MdPerson, MdWork, MdSchedule, MdSecurity } from 'react-icons/md';
 import FormPageTemplate from '../../templates/FormPageTemplate/FormPageTemplate';
 import DoctorFormSidebar from '../../organisms/DoctorFormSidebar/DoctorFormSidebar';
 import PersonalInfoForm from '../../organisms/PersonalInfoForm/PersonalInfoForm';
@@ -20,11 +21,12 @@ const HORARIOS_DEFAULT = [
   { id_horario: 3, nombre: 'Completo', horario_inicio: '08:00:00', horario_fin: '18:00:00' },
 ];
 
+// Corregido: los iconos ahora son los componentes importados, no null
 const secciones = [
-  { id: 'personal', label: 'Personal', icono: null },
-  { id: 'profesional', label: 'Profesional', icono: null },
-  { id: 'horario', label: 'Horario', icono: null },
-  { id: 'credenciales', label: 'Credenciales', icono: null },
+  { id: 'personal', label: 'Personal', icono: MdPerson },
+  { id: 'profesional', label: 'Profesional', icono: MdWork },
+  { id: 'horario', label: 'Horario', icono: MdSchedule },
+  { id: 'credenciales', label: 'Credenciales', icono: MdSecurity },
 ];
 
 const toStr = (v) => (v !== null && v !== undefined && v !== '') ? String(v) : '';
