@@ -85,3 +85,34 @@ exports.obtenerAuditoriasPorTabla = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
     }
 };
+
+// Obtener auditorias por rango de fechas
+exports.obtenerAuditoriasPorFecha = async (req, res) => {
+    try {
+        const { fecha_inicio, fecha_fin } = req.query;
+
+        if (!fecha_inicio || !fecha_fin) {
+            return res.status(400).json({ ok: false, msg: 'Debes enviar fecha_inicio y fecha_fin como query params' });
+        }
+
+        const auditorias = await Auditoria.findAll({
+            where: {
+                timestamp: {
+                    [Op.between]: [new Date(fecha_inicio), new Date(fecha_fin)]
+                }
+            },
+            include: [{ model: Usuario, attributes: ['nombre', 'apellido'] }],
+            order: [['timestamp', 'DESC']]
+        });
+
+        if (auditorias.length === 0) {
+            return res.status(404).json({ ok: false, msg: 'No se encontraron auditorías en ese rango de fechas' });
+        }
+
+        res.json({ ok: true, msg: 'Auditorías obtenidas con éxito', data: auditorias });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener auditorías', error: error.message });
+    }
+};
