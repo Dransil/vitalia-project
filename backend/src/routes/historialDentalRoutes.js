@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const historialdentalController = require('../controllers/historialDentalController');
+const upload = require('../middlewares/upload');
 
 // Ruta: /vitalia/historialdental
 router.get('/', historialdentalController.obtenerHistorialesDentales);
