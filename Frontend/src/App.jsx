@@ -25,10 +25,11 @@ import CitasDashboard from './components/Users/Doctor/Date/Date.jsx';
 import DoctorEditPage from './components/pages/DoctorEditPage/DoctorEditPage.jsx';
 import DoctorRegisterPage from './components/pages/DoctorRegisterPage/DoctorRegisterPage.jsx';
 import SettingsPage from './components/pages/SettingsPage/SettingsPage.jsx';
+import OdontogramaPct from './components/Users/Consult/OdontogramaPct.jsx';
+import authService from './Services/AuthService';
 
-// Función para convertir hex a rgba con opacidad
 const hexToRgba = (hex, opacity) => {
-  if (!hex) return `rgba(240, 249, 255, ${opacity})`; // Color por defecto #f0f9ff
+  if (!hex) return `rgba(240, 249, 255, ${opacity})`; 
   const hexClean = hex.replace('#', '');
   const r = parseInt(hexClean.substring(0, 2), 16);
   const g = parseInt(hexClean.substring(2, 4), 16);
@@ -44,7 +45,6 @@ const ProtectedLayout = () => {
   const primaryColor = config?.theme?.colors?.primary || '#0ea5e9';
   const backgroundColor = config?.theme?.background || '#f0f9ff';
   
-  // Si no hay color de fondo personalizado, usar una versión muy clara del color primario
   const finalBackgroundColor = backgroundColor !== '#f0f9ff' 
     ? backgroundColor 
     : hexToRgba(primaryColor, 0.05);
@@ -65,16 +65,13 @@ const ProtectedLayout = () => {
 };
 
 function App() {
+   const user = authService.getUser();
   return (
     <Router>
       <ThemeProvider>
         <Routes>
-          {/* Ruta pública - Login sin Sidebar */}
           <Route path="/login" element={<Login />} />
-          {/* Ruta pública de login para registrar nuevos usuarios */}
           <Route path="/Register_Signup" element={<RegisterLg />} />
-
-          {/* Todas las rutas protegidas heredan el Layout con Sidebar */}
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<MainDashboard />} />
             <Route path="/Settings" element={<SettingsPage />} />            
@@ -91,7 +88,7 @@ function App() {
             <Route path="/Speciality_create" element={<Speciality_create/>} />
             <Route path="/History_client/:id" element={<History_client />} />
             <Route path='/Doctor_Mod/:id' element={<DoctorEditPage/>}/>
-            <Route path='/Date_Dashboard' element={<CitasDashboard/>}/>
+            <Route path='/Date_Dashboard' element={<CitasDashboard doctorId={user?.id_usuario || user?.id} />}/> 
           </Route>
         </Routes>
       </ThemeProvider>

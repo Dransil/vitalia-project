@@ -29,8 +29,6 @@ const Sidebar = ({ activeView, setActiveView, userRole }) => {
   };
 
   const menuItems = [
-    { id: 'new-appointment', label: 'Nueva Cita', icon: MdAddCircle, path: '/NewAppointment' },
-    { id: 'appointments', label: 'Mis Citas', icon: MdCalendarToday, path: '/Appointments' },
     { id: 'settings', label: 'Configuración', icon: MdSettings, path: '/Settings' },
   ];
 
