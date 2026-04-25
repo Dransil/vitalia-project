@@ -55,45 +55,45 @@ exports.obtenerHistorialDentalPorId = async (req, res) => {
     }
 };
 
-// Crear historial dental
-exports.crearHistorialDental = async (req, res) => {
-    try {
-        const nuevoHistorial = await HistorialDental.create(req.body);
+// // Crear historial dental
+// exports.crearHistorialDental = async (req, res) => {
+//     try {
+//         const nuevoHistorial = await HistorialDental.create(req.body);
 
-        const historialCompleto = await HistorialDental.findByPk(nuevoHistorial.id_historial_dental, {
-            include: includeCompleto
-        });
+//         const historialCompleto = await HistorialDental.findByPk(nuevoHistorial.id_historial_dental, {
+//             include: includeCompleto
+//         });
 
-        res.status(201).json({ ok: true, msg: 'Historial dental creado con éxito', data: historialCompleto });
+//         res.status(201).json({ ok: true, msg: 'Historial dental creado con éxito', data: historialCompleto });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ ok: false, msg: 'Error al crear historial dental', error: error.message });
-    }
-};
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ ok: false, msg: 'Error al crear historial dental', error: error.message });
+//     }
+// };
 
-// Actualizar historial dental
-exports.actualizarHistorialDental = async (req, res) => {
-    try {
-        const { id } = req.params;
+// // Actualizar historial dental
+// exports.actualizarHistorialDental = async (req, res) => {
+//     try {
+//         const { id } = req.params;
 
-        const historial = await HistorialDental.findByPk(id);
+//         const historial = await HistorialDental.findByPk(id);
 
-        if (!historial) {
-            return res.status(404).json({ ok: false, msg: 'Historial dental no encontrado' });
-        }
+//         if (!historial) {
+//             return res.status(404).json({ ok: false, msg: 'Historial dental no encontrado' });
+//         }
 
-        await historial.update(req.body);
+//         await historial.update(req.body);
 
-        const historialActualizado = await HistorialDental.findByPk(id, { include: includeCompleto });
+//         const historialActualizado = await HistorialDental.findByPk(id, { include: includeCompleto });
 
-        res.json({ ok: true, msg: 'Historial dental actualizado con éxito', data: historialActualizado });
+//         res.json({ ok: true, msg: 'Historial dental actualizado con éxito', data: historialActualizado });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ ok: false, msg: 'Error al actualizar historial dental', error: error.message });
-    }
-};
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ ok: false, msg: 'Error al actualizar historial dental', error: error.message });
+//     }
+// };
 
 // VER BIEN
 
