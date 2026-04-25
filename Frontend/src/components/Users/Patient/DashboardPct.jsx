@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../Config/ThemeContext';
 import { MdSearch, MdClose, MdAdd, MdErrorOutline, MdEdit, MdDelete, MdCall, MdEmail, MdCake } from 'react-icons/md';
+import { RiFolderUserFill } from "react-icons/ri";
 import { useNavigate } from 'react-router-dom';
 import { IoPersonOutline } from "react-icons/io5";
 import * as pacientesService from '../../../Services/Pacienteservice';
@@ -21,7 +22,9 @@ const Pacientes_Dashboard = () => {
   useEffect(() => {
     loadPacientes();
   }, []);
-
+  const handleVerHistorial = (id) => {
+    navigate(`/History_client/${id}`);
+  };
   const loadPacientes = async () => {
     setIsLoading(true);
     setHasError(false);
@@ -29,14 +32,14 @@ const Pacientes_Dashboard = () => {
 
     if (result.ok) {
       const datosValidos = Array.isArray(result.data) ? result.data : [];
-      console.log('✅ Pacientes cargados:', datosValidos);
+      console.log('Pacientes cargados:', datosValidos);
       setPacientes(datosValidos);
       setHasError(false);
     } else {
       setPacientes([]);
       setHasError(true);
       setErrorMsg(result.msg || 'Error al cargar los pacientes');
-      console.error('❌ Error:', result.msg);
+      console.error('Error:', result.msg);
     }
     setIsLoading(false);
   };
@@ -81,9 +84,9 @@ const Pacientes_Dashboard = () => {
   };
 
   const handleEditPaciente = (id) => {
-    navigate(`/paciente/edit/${id}`);
+    navigate(`/Patient_Mod/${id}`);
   };
-
+ //funcion por el momento no usada, solo para un superadministrador
   const handleDeletePaciente = async (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este paciente?')) {
       const result = await pacientesService.cambiarEstadoPaciente(id);
@@ -607,9 +610,9 @@ const Pacientes_Dashboard = () => {
                         onMouseLeave={e => e.target.style.opacity = '1'}
                       >
                         <MdEdit size={16} />
-                        Editar
+                        Editar1
                       </button>
-
+                        {/*Boton no necesario por el momento, solo para un superadministrador
                       <button
                         onClick={() => handleDeletePaciente(sanitized.id)}
                         style={{
@@ -630,6 +633,27 @@ const Pacientes_Dashboard = () => {
                       >
                         <MdDelete size={16} />
                         Eliminar
+                      </button>*/}
+                      <button                 
+                        onClick= {()=> handleVerHistorial(sanitized.id)}       
+                        style={{                          
+                          padding: `${spacing.sm} ${spacing.md}`,
+                          background: colors.info.dark,
+                          color: colors.neutral[0],
+                          border: 'none',
+                          borderRadius: borderRadius.md,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: spacing.sm,
+                          fontSize: typography.fontSize.xs.size,
+                          transition: '0.3s',
+                        }}
+                        onMouseEnter={e => e.target.style.opacity = '0.8'}
+                        onMouseLeave={e => e.target.style.opacity = '1'}
+                      >
+                        <RiFolderUserFill size={16} />
+                        Ver historial
                       </button>
                     </div>
                   </div>

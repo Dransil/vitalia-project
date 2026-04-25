@@ -28,9 +28,10 @@ const Login = () => {
     }
 
     const result = await login(email, password);
-    
+
     if (result.ok) {
-      navigate('/'); 
+      console.log('USUARIO GUARDADO:', JSON.stringify(result.usuario));
+      navigate('/');
     } else {
       // Mostrar error
       setError(result.msg || 'Error en el login');
