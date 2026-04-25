@@ -12,6 +12,10 @@ config/config.json
 /backend/dist/
 /backend/build/
 
+# Uploads - ignorar archivos pero mantener la carpeta
+/backend/uploads/*
+!/backend/uploads/testfile.txt
+
 # Logs
 logs
 *.log
