@@ -7,7 +7,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Ej: historial_dental-1714500000000.jpg
-        const nombre = `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`;
+        const nombre = `${Date.now()}${path.extname(file.originalname)}`;
         cb(null, nombre);
     }
 });

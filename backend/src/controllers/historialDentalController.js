@@ -55,45 +55,45 @@ exports.obtenerHistorialDentalPorId = async (req, res) => {
     }
 };
 
-// Crear historial dental
-exports.crearHistorialDental = async (req, res) => {
-    try {
-        const nuevoHistorial = await HistorialDental.create(req.body);
+// // Crear historial dental
+// exports.crearHistorialDental = async (req, res) => {
+//     try {
+//         const nuevoHistorial = await HistorialDental.create(req.body);
 
-        const historialCompleto = await HistorialDental.findByPk(nuevoHistorial.id_historial_dental, {
-            include: includeCompleto
-        });
+//         const historialCompleto = await HistorialDental.findByPk(nuevoHistorial.id_historial_dental, {
+//             include: includeCompleto
+//         });
 
-        res.status(201).json({ ok: true, msg: 'Historial dental creado con éxito', data: historialCompleto });
+//         res.status(201).json({ ok: true, msg: 'Historial dental creado con éxito', data: historialCompleto });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ ok: false, msg: 'Error al crear historial dental', error: error.message });
-    }
-};
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ ok: false, msg: 'Error al crear historial dental', error: error.message });
+//     }
+// };
 
-// Actualizar historial dental
-exports.actualizarHistorialDental = async (req, res) => {
-    try {
-        const { id } = req.params;
+// // Actualizar historial dental
+// exports.actualizarHistorialDental = async (req, res) => {
+//     try {
+//         const { id } = req.params;
 
-        const historial = await HistorialDental.findByPk(id);
+//         const historial = await HistorialDental.findByPk(id);
 
-        if (!historial) {
-            return res.status(404).json({ ok: false, msg: 'Historial dental no encontrado' });
-        }
+//         if (!historial) {
+//             return res.status(404).json({ ok: false, msg: 'Historial dental no encontrado' });
+//         }
 
-        await historial.update(req.body);
+//         await historial.update(req.body);
 
-        const historialActualizado = await HistorialDental.findByPk(id, { include: includeCompleto });
+//         const historialActualizado = await HistorialDental.findByPk(id, { include: includeCompleto });
 
-        res.json({ ok: true, msg: 'Historial dental actualizado con éxito', data: historialActualizado });
+//         res.json({ ok: true, msg: 'Historial dental actualizado con éxito', data: historialActualizado });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ ok: false, msg: 'Error al actualizar historial dental', error: error.message });
-    }
-};
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ ok: false, msg: 'Error al actualizar historial dental', error: error.message });
+//     }
+// };
 
 // VER BIEN
 
@@ -104,10 +104,10 @@ exports.crearHistorialDental = async (req, res) => {
 
         // Si se subieron fotos, construir la URL
         if (req.files?.foto_antes) {
-            datos.url_foto_antes = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_antes[0].filename}`;
+            datos.url_foto_antes = `/uploads/${req.files.foto_antes[0].filename}`;
         }
         if (req.files?.foto_despues) {
-            datos.url_foto_despues = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_despues[0].filename}`;
+            datos.url_foto_despues = `/uploads/${req.files.foto_despues[0].filename}`;
         }
 
         const nuevoHistorial = await HistorialDental.create(datos);
@@ -137,10 +137,10 @@ exports.actualizarHistorialDental = async (req, res) => {
         const datos = { ...req.body };
 
         if (req.files?.foto_antes) {
-            datos.url_foto_antes = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_antes[0].filename}`;
+            datos.url_foto_antes = `/uploads/${req.files.foto_antes[0].filename}`;
         }
         if (req.files?.foto_despues) {
-            datos.url_foto_despues = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_despues[0].filename}`;
+            datos.url_foto_despues = `/uploads/${req.files.foto_despues[0].filename}`;
         }
 
         await historial.update(datos);
