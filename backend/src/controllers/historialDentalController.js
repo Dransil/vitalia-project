@@ -104,10 +104,10 @@ exports.crearHistorialDental = async (req, res) => {
 
         // Si se subieron fotos, construir la URL
         if (req.files?.foto_antes) {
-            datos.url_foto_antes = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_antes[0].filename}`;
+            datos.url_foto_antes = `/uploads/${req.files.foto_antes[0].filename}`;
         }
         if (req.files?.foto_despues) {
-            datos.url_foto_despues = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_despues[0].filename}`;
+            datos.url_foto_despues = `/uploads/${req.files.foto_despues[0].filename}`;
         }
 
         const nuevoHistorial = await HistorialDental.create(datos);
@@ -137,10 +137,10 @@ exports.actualizarHistorialDental = async (req, res) => {
         const datos = { ...req.body };
 
         if (req.files?.foto_antes) {
-            datos.url_foto_antes = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_antes[0].filename}`;
+            datos.url_foto_antes = `/uploads/${req.files.foto_antes[0].filename}`;
         }
         if (req.files?.foto_despues) {
-            datos.url_foto_despues = `${req.protocol}://${req.get('host')}/uploads/${req.files.foto_despues[0].filename}`;
+            datos.url_foto_despues = `/uploads/${req.files.foto_despues[0].filename}`;
         }
 
         await historial.update(datos);
