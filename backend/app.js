@@ -18,6 +18,7 @@ const historialRoutes = require('./src/routes/historialRoutes')
 const cotizacionRoutes = require('./src/routes/cotizacionRoutes')
 const historialDentalRoutes = require('./src/routes/historialDentalRoutes')
 const auditoriaRoutes = require('./src/routes/auditoriaRoutes')
+const dienteRoutes = require('./src/routes/dienteRoutes')
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -41,6 +42,7 @@ app.use('/vitalia/especialidad', especialidadRoutes);
 app.use('/vitalia/historial', historialRoutes);
 app.use('/vitalia/historialdental', historialDentalRoutes);
 app.use('/vitalia/cotizacion', cotizacionRoutes);
+app.use('/vitalia/dientes', dienteRoutes);
 app.use('/vitalia/administracion/auditoria', auditoriaRoutes);
 
 app.use('/vitalia/auth', authRoutes);
