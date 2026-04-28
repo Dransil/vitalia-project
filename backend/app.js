@@ -10,15 +10,16 @@ const app = express();
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
 const PacienteRoutes = require('./src/routes/pacienteRoutes');
 const tipocitaRoutes = require('./src/routes/tipocitaRoutes');
-const citaRoutes = require('./src/routes/citaRoutes')
-const horarioRoutes = require('./src/routes/horarioRoutes')
-const consultorioRoutes = require('./src/routes/consultorioRoutes')
-const especialidadRoutes = require('./src/routes/especialidadRoutes')
-const historialRoutes = require('./src/routes/historialRoutes')
-const cotizacionRoutes = require('./src/routes/cotizacionRoutes')
-const historialDentalRoutes = require('./src/routes/historialDentalRoutes')
-const auditoriaRoutes = require('./src/routes/auditoriaRoutes')
-const dienteRoutes = require('./src/routes/dienteRoutes')
+const citaRoutes = require('./src/routes/citaRoutes');
+const horarioRoutes = require('./src/routes/horarioRoutes');
+const consultorioRoutes = require('./src/routes/consultorioRoutes');
+const especialidadRoutes = require('./src/routes/especialidadRoutes');
+const historialRoutes = require('./src/routes/historialRoutes');
+const cotizacionRoutes = require('./src/routes/cotizacionRoutes');
+const historialDentalRoutes = require('./src/routes/historialDentalRoutes');
+const auditoriaRoutes = require('./src/routes/auditoriaRoutes');
+const dienteRoutes = require('./src/routes/dienteRoutes');
+const odontogramaRoutes = require('./src/routes/odontogramaRoutes');
 
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -43,6 +44,7 @@ app.use('/vitalia/historial', historialRoutes);
 app.use('/vitalia/historialdental', historialDentalRoutes);
 app.use('/vitalia/cotizacion', cotizacionRoutes);
 app.use('/vitalia/dientes', dienteRoutes);
+app.use('/vitalia/odontograma', odontogramaRoutes);
 app.use('/vitalia/administracion/auditoria', auditoriaRoutes);
 
 app.use('/vitalia/auth', authRoutes);
