@@ -27,3 +27,34 @@ exports.obtenerOdontogramaPorPaciente = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener odontograma', error: error.message });
     }
 };
+
+// Inicializar odontograma de un paciente (crea los 32 dientes en 'bien')
+exports.inicializarOdontograma = async (req, res) => {
+    try {
+        const { id_paciente } = req.params;
+
+        // Verificar que no tenga ya un odontograma
+        const existe = await Odontograma.findOne({ where: { id_paciente } });
+        if (existe) {
+            return res.status(400).json({ ok: false, msg: 'Este paciente ya tiene un odontograma inicializado' });
+        }
+
+        // Traer todos los dientes del catálogo
+        const dientes = await Diente.findAll();
+
+        // Crear una fila por cada diente con estado 'bien'
+        const registros = dientes.map(d => ({
+            id_paciente: parseInt(id_paciente),
+            id_diente:   d.id_diente,
+            estado:      'bien'
+        }));
+
+        await Odontograma.bulkCreate(registros);
+
+        res.status(201).json({ ok: true, msg: 'Odontograma inicializado con éxito — 32 dientes creados en estado bien' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al inicializar odontograma', error: error.message });
+    }
+};
