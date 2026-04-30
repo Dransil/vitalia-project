@@ -28,6 +28,28 @@ exports.obtenerOdontogramaPorPaciente = async (req, res) => {
     }
 };
 
+// Obtener estado de un diente específico de un paciente
+exports.obtenerDientePorPaciente = async (req, res) => {
+    try {
+        const { id_paciente, id_diente } = req.params;
+
+        const diente = await Odontograma.findOne({
+            where: { id_paciente, id_diente },
+            include: includeCompleto
+        });
+
+        if (!diente) {
+            return res.status(404).json({ ok: false, msg: 'No se encontró registro para este diente' });
+        }
+
+        res.json({ ok: true, msg: 'Diente obtenido con éxito', data: diente });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al obtener diente', error: error.message });
+    }
+};
+
 // Inicializar odontograma de un paciente (crea los 32 dientes en 'bien')
 exports.inicializarOdontograma = async (req, res) => {
     try {
