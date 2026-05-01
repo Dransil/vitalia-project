@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const notificacionController = require('../controllers/notificacionController');
 
-// Ruta: /vitalia/odontograma
+// Ruta: /vitalia/notificacion
 
 
 module.exports = router;
