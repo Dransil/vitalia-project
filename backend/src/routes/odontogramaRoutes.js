@@ -6,5 +6,6 @@ const odontogramaController = require('../controllers/odontogramaController');
 router.get('/paciente/:id_paciente', odontogramaController.obtenerOdontogramaPorPaciente);
 router.get('/paciente/:id_paciente/diente/:id_diente', odontogramaController.obtenerDientePorPaciente);
 router.post('/paciente/:id_paciente/iniciar', odontogramaController.inicializarOdontograma);
+router.patch('/paciente/:id_paciente/diente/:id_diente',  odontogramaController.actualizarEstadoDiente);
 
 module.exports = router;

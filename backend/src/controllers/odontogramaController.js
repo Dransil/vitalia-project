@@ -1,7 +1,7 @@
 const { Odontograma, Diente, Paciente } = require('../models/associations');
 
 const includeCompleto = [
-    { model: Diente,   attributes: ['id_diente', 'numero_fdi', 'nombre', 'cuadrante', 'es_muela_juicio'] },
+    { model: Diente, attributes: ['id_diente', 'numero_fdi', 'nombre', 'cuadrante', 'es_muela_juicio'] },
     { model: Paciente, attributes: ['id_paciente', 'nombre', 'apellido', 'cedula'] }
 ];
 
@@ -13,7 +13,7 @@ exports.obtenerOdontogramaPorPaciente = async (req, res) => {
         const odontograma = await Odontograma.findAll({
             where: { id_paciente },
             include: includeCompleto,
-            order: [[ Diente, 'numero_fdi', 'ASC' ]]
+            order: [[Diente, 'numero_fdi', 'ASC']]
         });
 
         if (odontograma.length === 0) {
@@ -67,8 +67,8 @@ exports.inicializarOdontograma = async (req, res) => {
         // Crear una fila por cada diente con estado 'bien'
         const registros = dientes.map(d => ({
             id_paciente: parseInt(id_paciente),
-            id_diente:   d.id_diente,
-            estado:      'bien'
+            id_diente: d.id_diente,
+            estado: 'bien'
         }));
 
         await Odontograma.bulkCreate(registros);
@@ -78,5 +78,38 @@ exports.inicializarOdontograma = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ ok: false, msg: 'Error al inicializar odontograma', error: error.message });
+    }
+};
+
+// Actualizar estado de un diente
+exports.actualizarEstadoDiente = async (req, res) => {
+    try {
+        const { id_paciente, id_diente } = req.params;
+        const { estado, observaciones } = req.body;
+
+        const diente = await Diente.findByPk(id_diente);
+        if (!diente) {
+            return res.status(404).json({ ok: false, msg: 'Diente no encontrado' });
+        }
+
+        if (diente.es_muela_juicio && !['bien', 'retirado'].includes(estado)) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Las muelas del juicio solo aceptan los estados: bien, retirado'
+            });
+        }
+
+        const [registro] = await Odontograma.upsert({
+            id_paciente: parseInt(id_paciente),
+            id_diente: parseInt(id_diente),
+            estado,
+            observaciones: observaciones ?? null
+        });
+
+        res.json({ ok: true, msg: 'Estado del diente actualizado con éxito', data: registro });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al actualizar estado del diente', error: error.message });
     }
 };
