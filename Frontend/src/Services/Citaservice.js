@@ -20,14 +20,6 @@ export const getCitaById = async (id) => {
     return { ok: false, msg: error?.data?.msg || 'Error al obtener la cita', data: null };
   }
 };
-
-// ── Obtener citas por doctor ─────────────────────────────────────────────────
-// ⚠️  IMPORTANTE: en tu router de Express, la ruta GET /doctor/:id debe estar
-//     ANTES de GET /:id, de lo contrario Express nunca llega a este endpoint.
-//     Reordena así en citaRoutes.js:
-//       router.get('/doctor/:id', citaController.obtenerCitasPorDoctor);
-//       router.get('/paciente/:id', citaController.obtenerCitasPorPaciente);
-//       router.get('/:id', citaController.obtenerCitaPorId);
 export const getCitasByDoctor = async (idDoctor) => {
   try {
     if (!idDoctor) return { ok: false, msg: 'ID de doctor requerido', data: [] };
@@ -54,11 +46,6 @@ export const getCitasByPaciente = async (idPaciente) => {
   }
 };
 
-// ── Crear cita ───────────────────────────────────────────────────────────────
-// Campos requeridos según BD:
-//   id_usuario, id_paciente, id_tipo_cita, fecha_hora
-// Campos opcionales:
-//   duracion_minutos, notas_previa, estado (default: 'programada')
 export const createCita = async (citaData) => {
   try {
     const required = ['id_usuario', 'id_paciente', 'id_tipo_cita', 'fecha_hora'];
