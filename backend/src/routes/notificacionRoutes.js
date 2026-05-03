@@ -6,6 +6,6 @@ const notificacionController = require('../controllers/notificacionController');
 router.get('/', notificacionController.obtenerNotificaciones);
 router.get('/:id_usuario', notificacionController.obtenerNotificacionesPorUsuario);
 router.get('/:id_usuario/pendientes', notificacionController.obtenerNotificacionesPendientes);
-
+router.post('/', notificacionController.obtenerNotificaciones);
 
 module.exports = router;

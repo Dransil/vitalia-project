@@ -87,3 +87,16 @@ exports.obtenerNotificacionesPendientes = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener notificaciones pendientes', error: error.message });
     }
 };
+
+// Crear notificacion
+exports.crearNotificacion = async (req, res) => {
+    try {
+        const nuevaNotificacion = await Notificacion.create(req.body);
+
+        res.status(201).json({ ok: true, msg: 'Notificación creada con éxito', data: nuevaNotificacion });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al crear notificación', error: error.message });
+    }
+};
