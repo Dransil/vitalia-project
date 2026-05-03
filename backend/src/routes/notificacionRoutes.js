@@ -8,5 +8,6 @@ router.get('/:id_usuario', notificacionController.obtenerNotificacionesPorUsuari
 router.get('/:id_usuario/pendientes', notificacionController.obtenerNotificacionesPendientes);
 router.post('/', notificacionController.crearNotificacion);
 router.patch('/:id/leer', notificacionController.marcarComoLeida);
+router.patch('/usuario/:id_usuario/leer', notificacionController.marcarComoLeida);
 
 module.exports = router;

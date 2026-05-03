@@ -128,3 +128,24 @@ exports.marcarComoLeida = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al marcar notificación', error: error.message });
     }
 };
+
+// Marcar todas las notificaciones de un usuario como leidas
+exports.marcarTodasComoLeidas = async (req, res) => {
+    try {
+        const { id_usuario } = req.params;
+
+        const [cantidad] = await Notificacion.update(
+            { estado: 'leida', fecha_lectura: new Date() },
+            { where: { id_usuario, estado: 'pendiente' } }
+        );
+
+        res.json({
+            ok: true,
+            msg: `${cantidad} notificación(es) marcadas como leídas`
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al marcar notificaciones', error: error.message });
+    }
+};
