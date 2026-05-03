@@ -87,3 +87,65 @@ exports.obtenerNotificacionesPendientes = async (req, res) => {
         res.status(500).json({ ok: false, msg: 'Error al obtener notificaciones pendientes', error: error.message });
     }
 };
+
+// Crear notificacion
+exports.crearNotificacion = async (req, res) => {
+    try {
+        const nuevaNotificacion = await Notificacion.create(req.body);
+
+        res.status(201).json({ ok: true, msg: 'Notificación creada con éxito', data: nuevaNotificacion });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al crear notificación', error: error.message });
+    }
+};
+
+// Marcar notificacion como leida
+exports.marcarComoLeida = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const notificacion = await Notificacion.findByPk(id);
+
+        if (!notificacion) {
+            return res.status(404).json({ ok: false, msg: 'Notificación no encontrada' });
+        }
+
+        if (notificacion.estado === 'leida') {
+            return res.status(400).json({ ok: false, msg: 'La notificación ya fue leída' });
+        }
+
+        await notificacion.update({
+            estado:        'leida',
+            fecha_lectura: new Date()
+        });
+
+        res.json({ ok: true, msg: 'Notificación marcada como leída' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al marcar notificación', error: error.message });
+    }
+};
+
+// Marcar todas las notificaciones de un usuario como leidas
+exports.marcarTodasComoLeidas = async (req, res) => {
+    try {
+        const { id_usuario } = req.params;
+
+        const [cantidad] = await Notificacion.update(
+            { estado: 'leida', fecha_lectura: new Date() },
+            { where: { id_usuario, estado: 'pendiente' } }
+        );
+
+        res.json({
+            ok: true,
+            msg: `${cantidad} notificación(es) marcadas como leídas`
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: 'Error al marcar notificaciones', error: error.message });
+    }
+};
