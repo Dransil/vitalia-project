@@ -90,6 +90,7 @@ function App() {
             <Route path='/Doctor_Mod/:id' element={<DoctorEditPage/>}/>
             <Route path='/Date_Dashboard' element={<CitasDashboard doctorId={user?.id_usuario || user?.id} />}/> 
             <Route path='/Ondate' element={<OdontogramaPct/>}/>
+      
           </Route>
         </Routes>
       </ThemeProvider>

@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   MdChevronLeft, MdChevronRight, MdCalendarToday, MdAdd, MdClose,
   MdEventNote, MdPerson, MdMedicalServices, MdAccessTime, MdSearch,
-  MdCheck, MdBlock, MdArrowForward, MdCancel, MdVisibility, MdSchedule
+  MdCheck, MdBlock, MdArrowForward, MdCancel, MdSchedule, MdWarning
 } from 'react-icons/md';
 import api from '../../../../Services/Api';
+import Advertencias from '../../Warning';
 
+// ─── Defaults ─────────────────────────────────────────────────────────────────
 const DC   = { neutral:{0:'#fff',50:'#f9fafb',100:'#f3f4f6',200:'#e5e7eb',300:'#d1d5db',400:'#9ca3af',500:'#6b7280',600:'#4b5563',700:'#374151',800:'#1f2937',900:'#111827'}, success:{light:'#d1fae5',main:'#10b981',dark:'#059669'}, error:{light:'#fee2e2',main:'#dc2626',dark:'#991b1b'} };
 const DCFG = { theme:{ colors:{ primary:'#0ea5e9', secondary:'#14b8a6' } } };
 const DSP  = { xs:'4px',sm:'8px',md:'16px',lg:'24px',xl:'32px' };
@@ -33,6 +35,7 @@ const ESTADO_COL = {
   no_asistio: {bg:'#fce7f3',text:'#9d174d',border:'#f9a8d4',label:'No asistió'},
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const toDateStr   = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const startOfWeek = d=>{ const r=new Date(d); const day=(r.getDay()+6)%7; r.setDate(r.getDate()-day); r.setHours(0,0,0,0); return r; };
 const addDays     = (d,n)=>{ const r=new Date(d); r.setDate(r.getDate()+n); return r; };
@@ -44,8 +47,47 @@ const esPasadoSlot= (dateStr,slot)=>{ const hoy=new Date(); if(dateStr<hoyStr())
 const getUserId   = ()=>{ try{ const u=JSON.parse(localStorage.getItem('user')||'{}'); return u?.id_usuario||u?.id||null; }catch{ return null; } };
 const diasDelMes  = (y,m)=>{ const first=new Date(y,m,1),last=new Date(y,m+1,0),off=(first.getDay()+6)%7,days=[]; for(let i=0;i<off;i++) days.push(null); for(let d=1;d<=last.getDate();d++) days.push(new Date(y,m,d)); return days; };
 
+// ── Detectar citas contiguas del mismo paciente en el mismo día ──
+// Dos citas son contiguas si la hora de inicio de la siguiente
+// es igual a la hora de fin de la anterior (fin = inicio + duracion_minutos)
+const detectarGrupoContiguo = (cita, todasCitas) => {
+  const activas = ['programada','confirmada','en_espera'];
+  const candidatas = todasCitas
+    .filter(c =>
+      activas.includes(c.estado) &&
+      c.id_paciente === cita.id_paciente &&
+      toDateStr(new Date(c.fecha_hora)) === toDateStr(new Date(cita.fecha_hora))
+    )
+    .sort((a,b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+
+  if (candidatas.length <= 1) return [cita];
+
+  // Construir grupos contiguos: fin de cita N = inicio de cita N+1
+  const grupos = [];
+  let grupoActual = [candidatas[0]];
+
+  for (let i = 1; i < candidatas.length; i++) {
+    const prev = grupoActual[grupoActual.length - 1];
+    const prevFin = new Date(new Date(prev.fecha_hora).getTime() + (prev.duracion_minutos||30) * 60000);
+    const currInicio = new Date(candidatas[i].fecha_hora);
+    // Contiguas si la diferencia es 0 o menos de 1 minuto (tolerancia)
+    const diffMs = Math.abs(currInicio - prevFin);
+    if (diffMs <= 60000) {
+      grupoActual.push(candidatas[i]);
+    } else {
+      grupos.push(grupoActual);
+      grupoActual = [candidatas[i]];
+    }
+  }
+  grupos.push(grupoActual);
+
+  // Devolver el grupo que contiene la cita seleccionada
+  const grupoConCita = grupos.find(g => g.some(c => c.id_cita === cita.id_cita));
+  return grupoConCita || [cita];
+};
+
 // ─── Modal Preview Cita ───────────────────────────────────────────────────────
-const ModalPreviewCita = ({cita,onClose,onVerDetalles,onCancelar,primary,secondary,colors,sp,br,sh,typo})=>{
+const ModalPreviewCita = ({cita,onClose,onIrACita,onCancelar,primary,secondary,colors,sp,br,sh,typo})=>{
   if(!cita) return null;
   const col = ESTADO_COL[cita.estado]||ESTADO_COL.programada;
   const fecha = new Date(cita.fecha_hora);
@@ -56,58 +98,40 @@ const ModalPreviewCita = ({cita,onClose,onVerDetalles,onCancelar,primary,seconda
       onClick={e=>e.target===e.currentTarget&&onClose()}
     >
       <div style={{background:colors?.neutral?.[0]||'#fff',borderRadius:'18px',width:'100%',maxWidth:'420px',overflow:'hidden',boxShadow:'0 32px 64px rgba(0,0,0,0.28)',animation:'slideUp 0.2s ease'}}>
-
-        {/* Barra de color superior */}
         <div style={{height:'5px',background:`linear-gradient(to right,${primary},${secondary})`}}/>
 
-        {/* Header */}
         <div style={{padding:'20px 22px 14px',borderBottom:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`,display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
           <div style={{flex:1,minWidth:0}}>
-            <span style={{display:'inline-flex',alignItems:'center',gap:'4px',background:col.bg,color:col.text,border:`1px solid ${col.border}`,borderRadius:'20px',padding:'2px 10px',fontSize:'11px',fontWeight:fw(typo,'semibold'),marginBottom:'6px'}}>
-              {col.label}
-            </span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:'4px',background:col.bg,color:col.text,border:`1px solid ${col.border}`,borderRadius:'20px',padding:'2px 10px',fontSize:'11px',fontWeight:fw(typo,'semibold'),marginBottom:'6px'}}>{col.label}</span>
             <h3 style={{margin:'0 0 2px',fontSize:fs(typo,'lg'),fontWeight:fw(typo,'bold'),color:colors?.neutral?.[900]||'#111827',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               {cita.Paciente?.nombre||'Paciente'} {cita.Paciente?.apellido||''}
             </h3>
             {cita.Paciente?.cedula&&<p style={{margin:0,fontSize:fs(typo,'xs'),color:colors?.neutral?.[400]||'#9ca3af'}}>CI: {cita.Paciente.cedula}</p>}
           </div>
-          <button onClick={onClose} style={{background:colors?.neutral?.[100]||'#f3f4f6',border:'none',borderRadius:'8px',padding:'6px',cursor:'pointer',display:'flex',color:colors?.neutral?.[500]||'#6b7280',flexShrink:0}}>
-            <MdClose size={18}/>
-          </button>
+          <button onClick={onClose} style={{background:colors?.neutral?.[100]||'#f3f4f6',border:'none',borderRadius:'8px',padding:'6px',cursor:'pointer',display:'flex',color:colors?.neutral?.[500]||'#6b7280',flexShrink:0}}><MdClose size={18}/></button>
         </div>
 
-        {/* Detalles */}
         <div style={{padding:'14px 22px',display:'flex',flexDirection:'column',gap:'8px'}}>
-          {/* Fecha/hora */}
           <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',background:colors?.neutral?.[50]||'#f9fafb',borderRadius:'10px',border:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`}}>
-            <div style={{width:'32px',height:'32px',borderRadius:'8px',background:`linear-gradient(135deg,${primary},${secondary})`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <MdSchedule size={17} color="#fff"/>
-            </div>
+            <div style={{width:'32px',height:'32px',borderRadius:'8px',background:`linear-gradient(135deg,${primary},${secondary})`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><MdSchedule size={17} color="#fff"/></div>
             <div>
               <div style={{fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:colors?.neutral?.[800]||'#1f2937',textTransform:'capitalize'}}>
                 {fecha.toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
               </div>
               <div style={{fontSize:fs(typo,'xs'),color:colors?.neutral?.[500]||'#6b7280'}}>
-                {fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}
-                {cita.duracion_minutos?` · ${cita.duracion_minutos} min`:''}
+                {fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}{cita.duracion_minutos?` · ${cita.duracion_minutos} min`:''}
               </div>
             </div>
           </div>
-
-          {/* Tipo cita */}
           {cita.TipoCita&&(
             <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',background:colors?.neutral?.[50]||'#f9fafb',borderRadius:'10px',border:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`}}>
-              <div style={{width:'32px',height:'32px',borderRadius:'8px',background:`${primary}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <MdMedicalServices size={17} style={{color:primary}}/>
-              </div>
+              <div style={{width:'32px',height:'32px',borderRadius:'8px',background:`${primary}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><MdMedicalServices size={17} style={{color:primary}}/></div>
               <div>
                 <div style={{fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:colors?.neutral?.[800]||'#1f2937'}}>{cita.TipoCita.nombre}</div>
                 {cita.TipoCita.costo_base&&<div style={{fontSize:fs(typo,'xs'),color:colors?.neutral?.[500]||'#6b7280'}}>$ {parseFloat(cita.TipoCita.costo_base).toFixed(2)}</div>}
               </div>
             </div>
           )}
-
-          {/* Notas */}
           {cita.notas_previa&&(
             <div style={{padding:'10px 12px',background:`${primary}06`,borderRadius:'10px',border:`1px solid ${primary}18`}}>
               <div style={{fontSize:'10px',fontWeight:fw(typo,'semibold'),color:primary,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'3px'}}>Notas</div>
@@ -116,16 +140,13 @@ const ModalPreviewCita = ({cita,onClose,onVerDetalles,onCancelar,primary,seconda
           )}
         </div>
 
-        {/* Acciones */}
         <div style={{padding:'10px 22px 20px',display:'flex',flexDirection:'column',gap:'7px'}}>
-          <button onClick={()=>onVerDetalles(cita)}
+          <button onClick={()=>onIrACita(cita)}
             style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'12px',background:`linear-gradient(to right,${primary},${secondary})`,color:'#fff',border:'none',borderRadius:'10px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),cursor:'pointer',boxShadow:`0 4px 14px ${primary}35`,transition:'opacity 0.15s'}}
-            onMouseEnter={e=>e.currentTarget.style.opacity='0.88'}
-            onMouseLeave={e=>e.currentTarget.style.opacity='1'}
+            onMouseEnter={e=>e.currentTarget.style.opacity='0.88'} onMouseLeave={e=>e.currentTarget.style.opacity='1'}
           >
-            <MdVisibility size={17}/> Ver Detalles de Cita <MdArrowForward size={15}/>
+            <MdArrowForward size={17}/> Ir a Cita
           </button>
-
           {puedeAccionar&&(
             <button onClick={()=>onCancelar(cita)}
               style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'7px',padding:'10px',background:'transparent',color:colors?.error?.main||'#dc2626',border:`1.5px solid ${colors?.error?.main||'#dc2626'}`,borderRadius:'10px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),cursor:'pointer',transition:'background 0.15s'}}
@@ -135,26 +156,51 @@ const ModalPreviewCita = ({cita,onClose,onVerDetalles,onCancelar,primary,seconda
               <MdCancel size={15}/> Cancelar Cita
             </button>
           )}
-
-          <button onClick={onClose} style={{width:'100%',padding:'8px',background:'transparent',color:colors?.neutral?.[400]||'#9ca3af',border:'none',borderRadius:'10px',fontSize:fs(typo,'sm'),cursor:'pointer'}}>
-            Cerrar
-          </button>
+          <button onClick={onClose} style={{width:'100%',padding:'8px',background:'transparent',color:colors?.neutral?.[400]||'#9ca3af',border:'none',borderRadius:'10px',fontSize:fs(typo,'sm'),cursor:'pointer'}}>Cerrar</button>
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Modal Confirmar Cancelación ──────────────────────────────────────────────
-const ModalCancelar = ({cita,onClose,onConfirm,primary,colors,sp,br,typo})=>{
-  const [razon,setRazon]=useState('');
-  const [guardando,setGuardando]=useState(false);
-  const handleConfirm=async()=>{ setGuardando(true); try{ await onConfirm(cita,razon); onClose(); }catch{ setGuardando(false); } };
-  return(
+// ─── Modal Cancelación (con soporte grupal) ───────────────────────────────────
+const ModalCancelar = ({cita, citasGrupo, onClose, onConfirm, primary, colors, sp, br, typo}) => {
+  const [razon,      setRazon]      = useState('');
+  const [cancelarTodo, setCancelarTodo] = useState(false);
+  const [guardando,  setGuardando]  = useState(false);
+
+  // Si hay grupo contiguo (más de 1 cita) mostramos la opción de cancelar todo
+  const tieneGrupo = citasGrupo && citasGrupo.length > 1;
+
+  // Hora inicio y fin del grupo para mostrar el rango
+  const horaInicio = tieneGrupo
+    ? new Date(citasGrupo[0].fecha_hora).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})
+    : null;
+  const horaFin = tieneGrupo
+    ? (() => {
+        const ultima = citasGrupo[citasGrupo.length - 1];
+        const d = new Date(ultima.fecha_hora);
+        d.setMinutes(d.getMinutes() + (ultima.duracion_minutos||30));
+        return d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+      })()
+    : null;
+
+  const handleConfirm = async () => {
+    setGuardando(true);
+    try {
+      const citasACancelar = (cancelarTodo && tieneGrupo) ? citasGrupo : [cita];
+      await onConfirm(citasACancelar, razon);
+      onClose();
+    } catch { setGuardando(false); }
+  };
+
+  return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.52)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',animation:'fadeIn 0.15s ease'}}
       onClick={e=>e.target===e.currentTarget&&!guardando&&onClose()}
     >
-      <div style={{background:colors?.neutral?.[0]||'#fff',borderRadius:'16px',width:'100%',maxWidth:'360px',padding:'24px',boxShadow:'0 32px 64px rgba(0,0,0,0.25)',animation:'slideUp 0.2s ease'}}>
+      <div style={{background:colors?.neutral?.[0]||'#fff',borderRadius:'16px',width:'100%',maxWidth:'380px',padding:'24px',boxShadow:'0 32px 64px rgba(0,0,0,0.25)',animation:'slideUp 0.2s ease'}}>
+
+        {/* Icono + título */}
         <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px'}}>
           <div style={{width:'42px',height:'42px',borderRadius:'10px',background:'#fee2e2',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <MdCancel size={22} style={{color:'#dc2626'}}/>
@@ -164,13 +210,73 @@ const ModalCancelar = ({cita,onClose,onConfirm,primary,colors,sp,br,typo})=>{
             <p style={{margin:0,fontSize:fs(typo,'xs'),color:colors?.neutral?.[400]||'#9ca3af'}}>Esta acción no se puede deshacer</p>
           </div>
         </div>
-        <textarea value={razon} onChange={e=>setRazon(e.target.value)} rows={3} placeholder="Motivo de cancelación (opcional)..."
+
+        {/* Opción de cancelación grupal — solo si hay citas contiguas */}
+        {tieneGrupo && (
+          <div style={{marginBottom:'14px',borderRadius:'10px',border:`1px solid ${colors?.neutral?.[200]||'#e5e7eb'}`,overflow:'hidden'}}>
+
+            {/* Advertencia de grupo */}
+            <div style={{padding:'10px 12px',background:'#fffbeb',borderBottom:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`,display:'flex',alignItems:'center',gap:'8px'}}>
+              <MdWarning size={15} style={{color:'#f59e0b',flexShrink:0}}/>
+              <span style={{fontSize:fs(typo,'xs'),color:'#92400e',fontWeight:fw(typo,'semibold')}}>
+                Este paciente tiene {citasGrupo.length} citas contiguas ({horaInicio} – {horaFin})
+              </span>
+            </div>
+
+            {/* Opción: solo esta cita */}
+            <div onClick={()=>setCancelarTodo(false)}
+              style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px',background:!cancelarTodo?`${primary}08`:'transparent',borderBottom:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`,transition:'background 0.1s'}}
+              onMouseEnter={e=>{if(cancelarTodo)e.currentTarget.style.background=colors?.neutral?.[50]||'#f9fafb';}}
+              onMouseLeave={e=>{if(cancelarTodo)e.currentTarget.style.background='transparent';}}
+            >
+              <div style={{width:'18px',height:'18px',borderRadius:'50%',border:`2px solid ${!cancelarTodo?primary:colors?.neutral?.[300]||'#d1d5db'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {!cancelarTodo&&<div style={{width:'8px',height:'8px',borderRadius:'50%',background:primary}}/>}
+              </div>
+              <div>
+                <div style={{fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:!cancelarTodo?primary:colors?.neutral?.[700]||'#374151'}}>
+                  Solo esta cita
+                </div>
+                <div style={{fontSize:fs(typo,'xs'),color:colors?.neutral?.[400]||'#9ca3af'}}>
+                  {new Date(cita.fecha_hora).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})} · {cita.duracion_minutos||30} min
+                </div>
+              </div>
+            </div>
+
+            {/* Opción: todas las contiguas */}
+            <div onClick={()=>setCancelarTodo(true)}
+              style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px',background:cancelarTodo?'#fff1f2':'transparent',transition:'background 0.1s'}}
+              onMouseEnter={e=>{if(!cancelarTodo)e.currentTarget.style.background=colors?.neutral?.[50]||'#f9fafb';}}
+              onMouseLeave={e=>{if(!cancelarTodo)e.currentTarget.style.background='transparent';}}
+            >
+              <div style={{width:'18px',height:'18px',borderRadius:'50%',border:`2px solid ${cancelarTodo?'#dc2626':colors?.neutral?.[300]||'#d1d5db'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {cancelarTodo&&<div style={{width:'8px',height:'8px',borderRadius:'50%',background:'#dc2626'}}/>}
+              </div>
+              <div>
+                <div style={{fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:cancelarTodo?'#dc2626':colors?.neutral?.[700]||'#374151'}}>
+                  Cancelar todas ({citasGrupo.length} citas)
+                </div>
+                <div style={{fontSize:fs(typo,'xs'),color:colors?.neutral?.[400]||'#9ca3af'}}>
+                  {horaInicio} – {horaFin} · {citasGrupo.reduce((a,c)=>a+(c.duracion_minutos||30),0)} min en total
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Motivo */}
+        <textarea value={razon} onChange={e=>setRazon(e.target.value)} rows={3}
+          placeholder="Motivo de cancelación (opcional)..."
           style={{width:'100%',padding:'10px 12px',border:`2px solid ${colors?.neutral?.[200]||'#e5e7eb'}`,borderRadius:'8px',fontSize:fs(typo,'sm'),outline:'none',resize:'none',boxSizing:'border-box',fontFamily:'inherit',color:colors?.neutral?.[800]||'#1f2937'}}
           onFocus={e=>e.target.style.borderColor='#dc2626'} onBlur={e=>e.target.style.borderColor=colors?.neutral?.[200]||'#e5e7eb'}
         />
+
         <div style={{display:'flex',gap:'8px',marginTop:'14px'}}>
-          <button onClick={onClose} disabled={guardando} style={{flex:1,padding:'10px',background:colors?.neutral?.[100]||'#f3f4f6',border:`1px solid ${colors?.neutral?.[200]||'#e5e7eb'}`,borderRadius:'8px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:colors?.neutral?.[700]||'#374151',cursor:'pointer'}}>Volver</button>
-          <button onClick={handleConfirm} disabled={guardando} style={{flex:1,padding:'10px',background:guardando?colors?.neutral?.[300]||'#d1d5db':'#dc2626',border:'none',borderRadius:'8px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:'#fff',cursor:guardando?'not-allowed':'pointer'}}>
+          <button onClick={onClose} disabled={guardando}
+            style={{flex:1,padding:'10px',background:colors?.neutral?.[100]||'#f3f4f6',border:`1px solid ${colors?.neutral?.[200]||'#e5e7eb'}`,borderRadius:'8px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:colors?.neutral?.[700]||'#374151',cursor:'pointer'}}>
+            Volver
+          </button>
+          <button onClick={handleConfirm} disabled={guardando}
+            style={{flex:1,padding:'10px',background:guardando?colors?.neutral?.[300]||'#d1d5db':'#dc2626',border:'none',borderRadius:'8px',fontSize:fs(typo,'sm'),fontWeight:fw(typo,'semibold'),color:'#fff',cursor:guardando?'not-allowed':'pointer'}}>
             {guardando?'Cancelando...':'Confirmar'}
           </button>
         </div>
@@ -235,11 +341,9 @@ const ModalAgendar = ({slots,onClose,onConfirm,primary,secondary,colors,sp,br,sh
           </div>
           <button onClick={()=>!guardando&&onClose()} style={{background:'none',border:'none',cursor:'pointer',color:colors?.neutral?.[400]||'#9ca3af',display:'flex',padding:'4px',borderRadius:br?.full||'9999px'}}><MdClose size={22}/></button>
         </div>
-
         <div style={{padding:`${sp?.sm||'8px'} ${sp?.xl||'32px'}`,borderBottom:`1px solid ${colors?.neutral?.[100]||'#f3f4f6'}`,background:colors?.neutral?.[50]||'#f9fafb',display:'flex',flexWrap:'wrap',gap:sp?.xs||'4px',flexShrink:0}}>
           {slots.map((s,i)=>(<span key={i} style={{display:'inline-flex',alignItems:'center',gap:'4px',background:`${primary}15`,border:`1px solid ${primary}30`,borderRadius:br?.full||'9999px',padding:'3px 10px',fontSize:fs(typo,'xs'),color:primary,fontWeight:fw(typo,'semibold')}}><MdAccessTime size={11}/>{s.fecha} · {slotToHHMM(s.slot)}</span>))}
         </div>
-
         <div style={{overflowY:'auto',flex:1,padding:`${sp?.lg||'24px'} ${sp?.xl||'32px'}`}}>
           {exitoso?(
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:sp?.xl||'32px',gap:sp?.md||'16px',minHeight:'200px'}}>
@@ -299,23 +403,27 @@ const CitasDashboard = ({doctorId})=>{
   const primary=config?.theme?.colors?.primary||DCFG.theme.colors.primary;
   const secondary=config?.theme?.colors?.secondary||DCFG.theme.colors.secondary;
 
-  const [vista,setVista]=useState('mes');
-  const [fecha,setFecha]=useState(new Date());
-  const [citas,setCitas]=useState([]);
-  const [loading,setLoading]=useState(false);
-  const [slotsSet,setSlotsSet]=useState(new Set());
-  const [modalOpen,setModalOpen]=useState(false);
-  const [errNav,setErrNav]=useState('');
-  const [citaPreview,setCitaPreview]=useState(null);
-  const [citaCancelar,setCitaCancelar]=useState(null);
+  const [vista,setVista]          = useState('mes');
+  const [fecha,setFecha]          = useState(new Date());
+  const [citas,setCitas]          = useState([]);
+  const [loading,setLoading]      = useState(false);
+  const [slotsSet,setSlotsSet]    = useState(new Set());
+  const [modalOpen,setModalOpen]  = useState(false);
+  const [errNav,setErrNav]        = useState('');
+  const [citaPreview,setCitaPreview]   = useState(null);
+  // Estado para cancelación: guarda { cita, citasGrupo }
+  const [cancelInfo,setCancelInfo]     = useState(null);
 
   const getId=useCallback(()=>doctorId||getUserId(),[doctorId]);
 
   const cargarCitas=useCallback(async()=>{
     const id=getId(); if(!id) return;
     setLoading(true);
-    try{ const res=await api.get(`/citas/doctor/${id}`); const arr=res?.data||res?.citas||(Array.isArray(res)?res:[]); setCitas(Array.isArray(arr)?arr:[]); }
-    catch{ setCitas([]); }
+    try{
+      const res=await api.get(`/citas/doctor/${id}`);
+      const arr=res?.data||res?.citas||(Array.isArray(res)?res:[]);
+      setCitas(Array.isArray(arr)?arr:[]);
+    }catch{ setCitas([]); }
     finally{ setLoading(false); }
   },[getId]);
 
@@ -363,8 +471,24 @@ const CitasDashboard = ({doctorId})=>{
   const slotsSeleccionados=Array.from(slotsSet).map(k=>JSON.parse(k)).sort((a,b)=>a.fecha===b.fecha?a.slot-b.slot:a.fecha.localeCompare(b.fecha));
 
   const handleClickCita=(e,cita)=>{e.stopPropagation();setCitaPreview(cita);};
-  const handleVerDetalles=(cita)=>{setCitaPreview(null);navigate(`/Details_Date/${cita.id_cita}`);};
-  const handleCancelarCita=async(cita,razon)=>{await api.patch(`/citas/estado/${cita.id_cita}`,{estado:'cancelada',razon_cancelacion:razon||null});cargarCitas();};
+  const handleIrACita=(cita)=>{setCitaPreview(null);navigate(`/ondate/${cita.id_cita}`);};
+
+  // Al abrir cancelación: detectar grupo contiguo y pasar al modal
+  const handleAbrirCancelar=(cita)=>{
+    setCitaPreview(null);
+    const grupo=detectarGrupoContiguo(cita, citas);
+    setCancelInfo({cita, citasGrupo: grupo});
+  };
+
+  // Confirmar cancelación — recibe array de citas a cancelar
+  const handleCancelarCitas=async(citasACancelar, razon)=>{
+    await Promise.all(
+      citasACancelar.map(c=>api.patch(`/citas/estado/${c.id_cita}`,{estado:'cancelada',razon_cancelacion:razon||null}))
+    );
+    setCancelInfo(null);
+    cargarCitas();
+  };
+
   const handleConfirmarCita=async({pacienteId,tipoCitaId,notas,slots})=>{
     const id=getId(); if(!id) throw new Error('No se encontró el ID del doctor');
     await Promise.all(slots.map(s=>{ const h=Math.floor(s.slot),m=s.slot%1===0.5?'30':'00'; return api.post('/citas',{id_usuario:parseInt(id),id_paciente:parseInt(pacienteId),id_tipo_cita:parseInt(tipoCitaId),fecha_hora:`${s.fecha} ${String(h).padStart(2,'0')}:${m}:00`,duracion_minutos:30,notas_previa:notas||null,estado:'programada'}); }));
@@ -473,6 +597,7 @@ const CitasDashboard = ({doctorId})=>{
 
   return(
     <div style={{minHeight:'100vh',background:colors?.neutral?.[50]||'#f9fafb',padding:sp?.xl||'32px'}}>
+
       <div style={{marginBottom:sp?.lg||'24px'}}>
         <div style={{display:'flex',alignItems:'center',gap:sp?.sm||'8px',marginBottom:'4px'}}>
           <div style={{width:'38px',height:'38px',borderRadius:br?.lg||'8px',background:`linear-gradient(135deg,${primary},${secondary})`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><MdEventNote size={22} color="#fff"/></div>
@@ -515,9 +640,15 @@ const CitasDashboard = ({doctorId})=>{
 
       {!loading&&(<>{vista==='mes'&&<VistaMes/>}{vista==='dia'&&<VistaHoraria esSemana={false}/>}{vista==='semana'&&<VistaHoraria esSemana={true}/>}</>)}
 
+      {/* Modales */}
       {modalOpen&&<ModalAgendar slots={slotsSeleccionados} onClose={()=>setModalOpen(false)} onConfirm={handleConfirmarCita} primary={primary} secondary={secondary} colors={colors} sp={sp} br={br} sh={sh} typo={typo}/>}
-      {citaPreview&&<ModalPreviewCita cita={citaPreview} onClose={()=>setCitaPreview(null)} onVerDetalles={handleVerDetalles} onCancelar={c=>{setCitaPreview(null);setCitaCancelar(c);}} primary={primary} secondary={secondary} colors={colors} sp={sp} br={br} sh={sh} typo={typo}/>}
-      {citaCancelar&&<ModalCancelar cita={citaCancelar} onClose={()=>setCitaCancelar(null)} onConfirm={handleCancelarCita} primary={primary} colors={colors} sp={sp} br={br} typo={typo}/>}
+
+      {citaPreview&&<ModalPreviewCita cita={citaPreview} onClose={()=>setCitaPreview(null)} onIrACita={handleIrACita} onCancelar={handleAbrirCancelar} primary={primary} secondary={secondary} colors={colors} sp={sp} br={br} sh={sh} typo={typo}/>}
+
+      {cancelInfo&&<ModalCancelar cita={cancelInfo.cita} citasGrupo={cancelInfo.citasGrupo} onClose={()=>setCancelInfo(null)} onConfirm={handleCancelarCitas} primary={primary} colors={colors} sp={sp} br={br} typo={typo}/>}
+
+      {/* Advertencias flotantes */}
+      <Advertencias/>
 
       <style>{`
         @keyframes spin    {to{transform:rotate(360deg);}}
